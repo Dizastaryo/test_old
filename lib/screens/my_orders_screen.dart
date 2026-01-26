@@ -45,7 +45,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: Text('Заказ #$orderId'),
+            title: Text('Запись #$orderId'),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,7 +54,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     children: const [
                       Icon(Icons.location_on_outlined, size: 20),
                       SizedBox(width: 6),
-                      Text('Адрес доставки:',
+                      Text('Адрес клиники:',
                           style: TextStyle(fontWeight: FontWeight.bold)),
                     ],
                   ),
@@ -64,13 +64,13 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     children: const [
                       Icon(Icons.check_circle_outline, size: 20),
                       SizedBox(width: 6),
-                      Text('Статус заказа:',
+                      Text('Статус записи:',
                           style: TextStyle(fontWeight: FontWeight.bold)),
                     ],
                   ),
                   Text(orderDetails['status'] ?? 'Неизвестно'),
                   const SizedBox(height: 12),
-                  const Text('Состав заказа:',
+                  const Text('Состав записи:',
                       style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
                   ...orderDetails['items'].map<Widget>((item) {
@@ -81,8 +81,8 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                           borderRadius: BorderRadius.circular(8)),
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(8),
-                        leading: const Icon(Icons.shopping_bag_outlined),
-                        title: Text('Товар ID: ${item['product_id']}'),
+                        leading: const Icon(Icons.medical_services),
+                        title: Text('Услуга ID: ${item['product_id']}'),
                         subtitle: Text('Количество: ${item['quantity']}'),
                       ),
                     );
@@ -111,12 +111,12 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('Мои заказы'),
+        title: const Text('Мои записи'),
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : orders.isEmpty
-              ? const Center(child: Text('У вас нет заказов'))
+              ? const Center(child: Text('У вас нет записей'))
               : ListView.builder(
                   itemCount: orders.length,
                   itemBuilder: (context, index) {
@@ -124,7 +124,7 @@ class _MyOrdersScreenState extends State<MyOrdersScreen> {
                     return Card(
                       margin: const EdgeInsets.all(8),
                       child: ListTile(
-                        title: Text('Заказ #${order['id']}'),
+                        title: Text('Запись #${order['id']}'),
                         subtitle: Text('Статус: ${order['status']}'),
                         trailing: IconButton(
                           icon: const Icon(Icons.info_outline),

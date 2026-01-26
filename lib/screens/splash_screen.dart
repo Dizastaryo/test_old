@@ -49,20 +49,11 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _handleAutoLogin() async {
     final auth = context.read<AuthProvider>();
-
-    final stored = await auth.loadRefreshTokenForDebug();
-    if (stored == null) {
-      Navigator.pushReplacementNamed(context, '/auth');
-      return;
-    }
-
-    final success = await auth.tryRefreshToken();
-    if (success) {
-      final route = auth.routeForCurrentUser();
-      Navigator.pushReplacementNamed(context, route);
-    } else {
-      Navigator.pushReplacementNamed(context, '/auth');
-    }
+    
+    // Всегда успешно для mock - просто переходим на главный экран
+    await Future.delayed(const Duration(milliseconds: 500));
+    // Всегда переходим на главный экран (MainHomeScreen)
+    Navigator.pushReplacementNamed(context, '/main');
   }
 
   @override
@@ -83,7 +74,7 @@ class _SplashScreenState extends State<SplashScreen>
             ScaleTransition(
               scale: _logoAnimation,
               child: const Icon(
-                Icons.shopping_bag_rounded,
+                Icons.local_hospital_rounded,
                 size: 100,
                 color: Colors.white,
               ),
@@ -92,7 +83,7 @@ class _SplashScreenState extends State<SplashScreen>
             FadeTransition(
               opacity: _textAnimation,
               child: const Text(
-                'Aidyn Market',
+                'Qamqor Clinic',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 32,

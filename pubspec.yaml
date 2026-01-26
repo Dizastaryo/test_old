@@ -1,5 +1,5 @@
-name: aidyn_market
-description: "A warehouse storage Flutter app for Amanzat."
+name: qamqor_clinic
+description: "Qamqor Clinic - мобильное приложение частной клиники"
 publish_to: 'none'  # Уберите эту строку, если хотите опубликовать на pub.dev
 version: 1.0.0+1
 

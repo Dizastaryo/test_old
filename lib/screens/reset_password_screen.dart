@@ -74,7 +74,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF6A0DAD),
+                  color: const Color(0xFF2E7D32),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -83,10 +83,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                 controller: _loginController,
                 decoration: InputDecoration(
                   labelText: 'Email или Телефон',
-                  prefixIcon: Icon(Icons.person, color: Color(0xFF6A0DAD)),
+                  prefixIcon: const Icon(Icons.person, color: Color(0xFF2E7D32)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(15),
-                    borderSide: BorderSide(color: Color(0xFF6A0DAD)),
+                    borderSide: const BorderSide(color: Color(0xFF2E7D32)),
                   ),
                 ),
                 validator: (value) {
@@ -103,10 +103,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   decoration: InputDecoration(
                     labelText: 'Код подтверждения',
                     prefixIcon:
-                        Icon(Icons.lock_clock, color: Color(0xFF6A0DAD)),
+                        const Icon(Icons.lock_clock, color: Color(0xFF2E7D32)),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide(color: Color(0xFF6A0DAD)),
+                      borderSide: const BorderSide(color: Color(0xFF2E7D32)),
                     ),
                   ),
                   validator: (value) =>
@@ -119,20 +119,20 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                   decoration: InputDecoration(
                     labelText: 'Новый пароль',
                     prefixIcon:
-                        const Icon(Icons.lock, color: Color(0xFF6A0DAD)),
+                        const Icon(Icons.lock, color: Color(0xFF2E7D32)),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _isPasswordVisible
                             ? Icons.visibility
                             : Icons.visibility_off,
-                        color: Color(0xFF6A0DAD),
+                        color: const Color(0xFF2E7D32),
                       ),
                       onPressed: () => setState(
                           () => _isPasswordVisible = !_isPasswordVisible),
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15),
-                      borderSide: BorderSide(color: Color(0xFF6A0DAD)),
+                      borderSide: const BorderSide(color: Color(0xFF2E7D32)),
                     ),
                   ),
                   validator: (value) {
@@ -155,7 +155,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                       onPressed: _isLoading ? null : _handlePasswordReset,
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size.fromHeight(50),
-                        backgroundColor: const Color(0xFF6A0DAD),
+                        backgroundColor: const Color(0xFF2E7D32),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15),
                         ),

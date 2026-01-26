@@ -45,7 +45,7 @@ class _AuthScreenState extends State<AuthScreen>
         filled: true,
         fillColor: Colors.white.withOpacity(0.9),
         hintText: hint,
-        prefixIcon: Icon(icon, color: Colors.deepPurple),
+        prefixIcon: Icon(icon, color: const Color(0xFF2E7D32)),
         contentPadding: const EdgeInsets.symmetric(vertical: 14),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -53,7 +53,7 @@ class _AuthScreenState extends State<AuthScreen>
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.deepPurple),
+          borderSide: const BorderSide(color: Color(0xFF2E7D32)),
         ),
       );
 
@@ -67,12 +67,12 @@ class _AuthScreenState extends State<AuthScreen>
           margin: const EdgeInsets.symmetric(horizontal: 8),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           decoration: BoxDecoration(
-            color: selected ? Colors.deepPurple : Colors.white,
+            color: selected ? const Color(0xFF2E7D32) : Colors.white,
             borderRadius: BorderRadius.circular(20),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                        color: Colors.deepPurple.withOpacity(0.4),
+                        color: const Color(0xFF2E7D32).withOpacity(0.4),
                         blurRadius: 8)
                   ]
                 : null,
@@ -86,7 +86,7 @@ class _AuthScreenState extends State<AuthScreen>
             child: Text(
               mode == RegistrationMode.email ? 'Емайл' : 'Номер',
               style: TextStyle(
-                color: selected ? Colors.white : Colors.deepPurple,
+                color: selected ? Colors.white : const Color(0xFF2E7D32),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -142,7 +142,7 @@ class _AuthScreenState extends State<AuthScreen>
             const SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: const Color(0xFF2E7D32),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -151,14 +151,9 @@ class _AuthScreenState extends State<AuthScreen>
                 if (_regKey.currentState!.validate()) {
                   setState(() => _loading = true);
                   try {
-                    if (_regMode == RegistrationMode.email) {
-                      await auth.sendEmailOtp(_emailCtrl.text.trim());
-                      _showSnack('OTP отправлен на email');
-                    } else {
-                      await auth.sendSmsOtp(_phoneCtrl.text.trim());
-                      _showSnack('OTP отправлен на телефон');
-                    }
+                    // Упрощенная авторизация - сразу переходим к вводу кода
                     setState(() => _codeSent = true);
+                    _showSnack('Код: 1234 (заглушка)');
                   } catch (e) {
                     _showSnack('Ошибка: $e');
                   } finally {
@@ -195,7 +190,7 @@ class _AuthScreenState extends State<AuthScreen>
             const SizedBox(height: 24),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
+                backgroundColor: const Color(0xFF2E7D32),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -204,30 +199,24 @@ class _AuthScreenState extends State<AuthScreen>
                 if (_regKey.currentState!.validate()) {
                   setState(() => _loading = true);
                   try {
+                    // Упрощенная регистрация - всегда успешно
                     if (_regMode == RegistrationMode.email) {
-                      await auth.verifyEmailOtp(
-                        _emailCtrl.text.trim(),
-                        _otpCtrl.text.trim(),
-                      );
                       await auth.registerWithEmail(
                         _usernameCtrl.text.trim(),
                         _emailCtrl.text.trim(),
                         _passCtrl.text.trim(),
                         _otpCtrl.text.trim(),
+                        context,
                       );
                     } else {
-                      await auth.verifySmsOtp(
-                        _phoneCtrl.text.trim(),
-                        _otpCtrl.text.trim(),
-                      );
                       await auth.registerWithPhone(
                         _usernameCtrl.text.trim(),
                         _phoneCtrl.text.trim(),
                         _passCtrl.text.trim(),
                         _otpCtrl.text.trim(),
+                        context,
                       );
                     }
-                    Navigator.pushReplacementNamed(context, '/main');
                   } catch (e) {
                     _showSnack('Ошибка: $e');
                   } finally {
@@ -273,22 +262,23 @@ class _AuthScreenState extends State<AuthScreen>
                   borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
-            onPressed: () async {
-              if (_loginKey.currentState!.validate()) {
-                setState(() => _loading = true);
-                try {
-                  await auth.login(
-                    _loginCtrl.text.trim(),
-                    _loginPassCtrl.text.trim(),
-                    context,
-                  );
-                } catch (e) {
-                  _showSnack('Ошибка: $e');
-                } finally {
-                  setState(() => _loading = false);
+              onPressed: () async {
+                if (_loginKey.currentState!.validate()) {
+                  setState(() => _loading = true);
+                  try {
+                    // Упрощенный вход - всегда успешно
+                    await auth.login(
+                      _loginCtrl.text.trim(),
+                      _loginPassCtrl.text.trim(),
+                      context,
+                    );
+                  } catch (e) {
+                    _showSnack('Ошибка: $e');
+                  } finally {
+                    setState(() => _loading = false);
+                  }
                 }
-              }
-            },
+              },
             child: const Text('Войти'),
           ),
           const SizedBox(height: 12),
@@ -309,7 +299,7 @@ class _AuthScreenState extends State<AuthScreen>
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFEDE7F6), Color(0xFFD1C4E9)],
+                colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -346,11 +336,11 @@ class _AuthScreenState extends State<AuthScreen>
                       TabBar(
                         controller: _tabController,
                         indicator: BoxDecoration(
-                          color: Colors.deepPurple,
+                          color: const Color(0xFF2E7D32),
                           borderRadius: BorderRadius.circular(24),
                         ),
                         labelColor: Colors.white,
-                        unselectedLabelColor: Colors.deepPurple,
+                        unselectedLabelColor: const Color(0xFF2E7D32),
                         tabs: const [
                           Tab(text: 'Регистрация'),
                           Tab(text: 'Вход'),

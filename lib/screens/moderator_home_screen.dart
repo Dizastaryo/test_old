@@ -25,7 +25,7 @@ class _ModeratorHomeScreenState extends State<ModeratorHomeScreen> {
       appBar: AppBar(
         title: const Text('Панель модератора'),
         centerTitle: true,
-        backgroundColor: Color(0xFF6A0DAD),
+        backgroundColor: const Color(0xFF2E7D32),
         automaticallyImplyLeading: false,
       ),
       body: AnimatedSwitcher(
@@ -34,7 +34,7 @@ class _ModeratorHomeScreenState extends State<ModeratorHomeScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentPage,
-        selectedItemColor: Color(0xFF6A0DAD),
+        selectedItemColor: const Color(0xFF2E7D32),
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,

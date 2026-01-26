@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'product_detail_screen.dart';
-import '../services/product_service.dart';
-import '../services/category_service.dart';
+import '../services/mock_product_service.dart';
+import '../services/mock_category_service.dart';
 import '../models/product.dart';
 import '../models/category.dart';
 
@@ -30,7 +30,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   void _loadProducts() {
-    final productService = Provider.of<ProductService>(context, listen: false);
+    final productService = Provider.of<MockProductService>(context, listen: false);
     setState(() {
       _futureProducts = productService.getProducts(
         categoryId: _selectedCategory?.id,
@@ -41,7 +41,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   Future<void> _loadCategories() async {
     try {
-      final service = Provider.of<CategoryService>(context, listen: false);
+      final service = Provider.of<MockCategoryService>(context, listen: false);
       final cats = await service.getCategories();
       setState(() => _categories = cats);
     } catch (e) {
@@ -52,13 +52,13 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final productService = Provider.of<ProductService>(context, listen: false);
+    final productService = Provider.of<MockProductService>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Продукты'),
+        title: const Text('Услуги клиники'),
         automaticallyImplyLeading: false,
-        backgroundColor: const Color(0xFF6A0DAD),
+        backgroundColor: const Color(0xFF2E7D32),
         elevation: 0,
       ),
       body: Padding(
@@ -76,7 +76,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
                   } else if (snapshot.hasError) {
                     return Center(child: Text('Ошибка: ${snapshot.error}'));
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('Нет продуктов.'));
+                    return const Center(child: Text('Нет доступных услуг.'));
                   }
 
                   final products = snapshot.data!;
@@ -156,7 +156,7 @@ class _ProductsScreenState extends State<ProductsScreen> {
   }
 
   Widget _buildProductGrid(
-      List<Product> products, ProductService productService) {
+      List<Product> products, MockProductService productService) {
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -188,16 +188,20 @@ class _ProductsScreenState extends State<ProductsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(16),
+                Container(
+                  width: double.infinity,
+                  height: 180,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2E7D32).withOpacity(0.1),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
                   ),
-                  child: Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    height: 180,
-                    fit: BoxFit.cover,
+                  child: const Icon(
+                    Icons.medical_services,
+                    size: 60,
+                    color: Color(0xFF2E7D32),
                   ),
                 ),
                 Padding(

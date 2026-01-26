@@ -1,31 +1,24 @@
 import 'dart:async';
 import 'dart:math';
-import 'package:dio/dio.dart';
-import 'package:dio/io.dart';
-import 'dart:io'; // Для использования HttpClient и X509Certificate
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:cookie_jar/cookie_jar.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:workmanager/workmanager.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Providers
 import 'providers/auth_provider.dart';
 
-// Services
-import 'services/product_service.dart';
-import 'services/category_service.dart';
-import 'services/order_service.dart';
+// Services - используем mock сервисы
+import 'services/mock_product_service.dart';
+import 'services/mock_category_service.dart';
+import 'services/mock_order_service.dart';
 
 // Screens
 import 'screens/product_detail_screen.dart';
 import 'screens/payment_screen.dart';
 import 'screens/payment_status_screen.dart';
-import 'screens/home_screen.dart';
+import 'screens/main_home_screen.dart';
 import 'screens/my_orders_screen.dart';
 import 'screens/splash_screen.dart';
 import 'screens/support_screen.dart';
@@ -38,95 +31,30 @@ import 'screens/admin_home_screen.dart';
 import 'screens/moderator_home_screen.dart';
 import 'screens/products_screen.dart';
 import 'screens/add_product_screen.dart';
-import 'services/admin_service.dart';
-
-/// Глобальное переопределение HttpClient для принятия самоподписанных сертификатов
-class MyHttpOverrides extends HttpOverrides {
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    final client = super.createHttpClient(context);
-    client.badCertificateCallback =
-        (X509Certificate cert, String host, int port) => true;
-    return client;
-  }
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: '.env');
-  // Применяем глобальное переопределение для HttpClient
-  HttpOverrides.global = MyHttpOverrides();
 
   // Инициализация уведомлений и фоновых задач
   await _initNotifications();
   await _requestNotificationPermissions();
   Workmanager().initialize(_callbackDispatcher);
   Workmanager().registerPeriodicTask(
-    'notify_rentals',
-    'notify_rentals',
+    'notify_appointments',
+    'notify_appointments',
     frequency: const Duration(days: 1),
   );
 
-  // Настройка Dio и CookieJar
-  final dio = Dio();
-  final directory = await getApplicationDocumentsDirectory();
-  final cookieJar = PersistCookieJar(
-    storage: FileStorage('${directory.path}/.cookies/'),
-  );
-  dio.interceptors.add(CookieManager(cookieJar));
-
-  // Переопределяем HttpClient для Dio, чтобы игнорировать ошибки SSL
-  dio.httpClientAdapter = IOHttpClientAdapter(
-    createHttpClient: () {
-      final client = HttpClient();
-      client.badCertificateCallback =
-          (X509Certificate cert, String host, int port) => true;
-      return client;
-    },
-  );
-
-  // Провайдер аутентификации
-  final authProvider = AuthProvider(dio, cookieJar);
-
-  // Интерсептор для добавления Access-token
-  dio.interceptors.add(
-    InterceptorsWrapper(
-      onRequest: (options, handler) {
-        final token = authProvider.token;
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
-        }
-        handler.next(options);
-      },
-      onError: (err, handler) async {
-        if (err.response?.statusCode == 401 &&
-            err.response?.statusCode == 403 &&
-            !err.requestOptions.extra.containsKey('retry')) {
-          try {
-            await authProvider.silentAutoLogin();
-            err.requestOptions.extra['retry'] = true;
-            final clonedReq = await dio.fetch(err.requestOptions);
-            handler.resolve(clonedReq);
-          } catch (_) {
-            handler.next(err);
-          }
-        } else {
-          handler.next(err);
-        }
-      },
-    ),
-  );
+  // Провайдер аутентификации (использует mock сервис)
+  final authProvider = AuthProvider();
 
   runApp(
     MultiProvider(
       providers: [
-        Provider<Dio>.value(value: dio),
-        Provider<CookieJar>.value(value: cookieJar),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-        Provider<ProductService>(create: (_) => ProductService(dio)),
-        Provider<UserService>(create: (_) => UserService(dio)),
-        Provider<CategoryService>(create: (_) => CategoryService(dio)),
-        Provider<OrderService>(create: (_) => OrderService(dio)),
+        Provider<MockProductService>(create: (_) => MockProductService()),
+        Provider<MockCategoryService>(create: (_) => MockCategoryService()),
+        Provider<MockOrderService>(create: (_) => MockOrderService()),
       ],
       child: const MyApp(),
     ),
@@ -154,8 +82,8 @@ Future<void> _requestNotificationPermissions() async {
 
 void _callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
-    if (task == 'notify_rentals') {
-      // TODO: logic for notifications
+    if (task == 'notify_appointments') {
+      // TODO: logic for appointment notifications
       return Future.value(true);
     }
     return Future.value(false);
@@ -168,12 +96,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Mag Service',
+      title: 'Qamqor Clinic',
       theme: ThemeData(
-        primaryColor: const Color(0xFF6C9942),
+        primaryColor: const Color(0xFF2E7D32),
         colorScheme: const ColorScheme.light(
-          primary: Color(0xFF6C9942),
-          secondary: Color(0xFF4A6E2B),
+          primary: Color(0xFF2E7D32),
+          secondary: Color(0xFF1B5E20),
+          tertiary: Color(0xFF4CAF50),
         ),
         fontFamily: 'Montserrat',
         useMaterial3: true,
@@ -189,7 +118,7 @@ class MyApp extends StatelessWidget {
             page = const AuthScreen();
             break;
           case '/main':
-            page = const HomeScreen();
+            page = const MainHomeScreen();
             break;
           case '/products':
             page = const ProductsScreen();

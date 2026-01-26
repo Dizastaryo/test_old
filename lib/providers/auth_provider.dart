@@ -1,27 +1,22 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:dio/dio.dart';
-import 'package:cookie_jar/cookie_jar.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
-import '../services/auth_service.dart';
+import '../services/mock_auth_service.dart';
 
 class AuthProvider with ChangeNotifier {
-  final Dio _dio;
-  final CookieJar _cookieJar;
-  final AuthService _authService;
+  final MockAuthService _authService = MockAuthService();
   final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
 
   bool _isLoading = false;
   dynamic currentUser;
   String? _token;
 
-  final Uri _baseUri = Uri.parse(dotenv.env['AUTH_BASE_URL']!);
   static const _kRefreshToken = 'refreshToken';
+  static const _kIsLoggedIn = 'isLoggedIn';
 
-  AuthProvider(this._dio, this._cookieJar) : _authService = AuthService(_dio) {}
+  AuthProvider() {
+    // Автоматически входим при инициализации
+    _autoLogin();
+  }
 
   bool get isLoading => _isLoading;
   String? get token => _token;
@@ -31,14 +26,22 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> _saveRefreshToken() async {
-    final cookies = await _cookieJar.loadForRequest(_baseUri);
-    final cookie = cookies.firstWhere(
-      (c) => c.name == 'refreshToken',
-      orElse: () => Cookie('', ''),
-    );
-    if (cookie.value.isNotEmpty) {
-      await _secureStorage.write(key: _kRefreshToken, value: cookie.value);
+  // Автоматический вход - заглушка
+  Future<void> _autoLogin() async {
+    final isLoggedIn = await _secureStorage.read(key: _kIsLoggedIn);
+    if (isLoggedIn == 'true') {
+      // Если уже был вход, восстанавливаем пользователя
+      await silentAutoLogin();
+    } else {
+      // Иначе создаем mock пользователя
+      _token = 'mock_access_token_${DateTime.now().millisecondsSinceEpoch}';
+      currentUser = {
+        'username': 'Пользователь',
+        'email': 'user@qamqor.clinic',
+        'roles': ['ROLE_USER'],
+      };
+      await _secureStorage.write(key: _kIsLoggedIn, value: 'true');
+      notifyListeners();
     }
   }
 
@@ -46,35 +49,35 @@ class AuthProvider with ChangeNotifier {
     return await _secureStorage.read(key: _kRefreshToken);
   }
 
-  /// Метод для отладки: возвращает текущее значение refreshToken
   Future<String?> loadRefreshTokenForDebug() async {
     return await _loadRefreshToken();
   }
 
   Future<void> _clearRefreshToken() async {
     await _secureStorage.delete(key: _kRefreshToken);
-    await _cookieJar.deleteAll();
+    await _secureStorage.delete(key: _kIsLoggedIn);
   }
 
+  // Упрощенный вход - всегда успешно
   Future<void> login(String login, String password,
       [BuildContext? context]) async {
     try {
       _setLoading(true);
+      // Используем mock сервис - всегда успешно
       final response = await _authService.login(login, password);
-      if (response.statusCode == 200) {
-        _token = response.data['accessToken'];
-        currentUser = {
-          'username': response.data['username'],
-          'email': response.data['email'],
-          'roles': response.data['roles'],
-        };
-        await _saveRefreshToken();
-        notifyListeners();
+      _token = response['accessToken'];
+      currentUser = {
+        'username': response['username'],
+        'email': response['email'],
+        'roles': response['roles'],
+      };
+      await _secureStorage.write(key: _kIsLoggedIn, value: 'true');
+      await _secureStorage.write(key: _kRefreshToken, value: _token!);
+      notifyListeners();
 
-        if (context != null) {
-          final roles = List<String>.from(response.data['roles']);
-          _navigateBasedOnRole(context, roles);
-        }
+      if (context != null) {
+        final roles = List<String>.from(response['roles']);
+        _navigateBasedOnRole(context, roles);
       }
     } catch (e) {
       throw Exception('Login error: $e');
@@ -85,35 +88,41 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> silentAutoLogin() async {
     final stored = await _loadRefreshToken();
-    if (stored == null) throw Exception('No stored refreshToken');
+    if (stored == null) {
+      // Если нет токена, создаем нового пользователя
+      _token = 'mock_access_token_${DateTime.now().millisecondsSinceEpoch}';
+      currentUser = {
+        'username': 'Пользователь',
+        'email': 'user@qamqor.clinic',
+        'roles': ['ROLE_USER'],
+      };
+      await _secureStorage.write(key: _kIsLoggedIn, value: 'true');
+      await _secureStorage.write(key: _kRefreshToken, value: _token!);
+      notifyListeners();
+      return;
+    }
 
     _setLoading(true);
     try {
-      // Удаляем все куки (в т.ч. старый refreshToken)
-      await _cookieJar.deleteAll();
-
-      // Сохраняем единственную куку из secure storage
-      await _cookieJar.saveFromResponse(
-        _baseUri,
-        [Cookie(_kRefreshToken, stored)],
-      );
-
       final response = await _authService.refreshToken();
-      if (response.statusCode == 200) {
-        _token = response.data['accessToken'];
-        currentUser = {
-          'username': response.data['username'],
-          'email': response.data['email'],
-          'roles': response.data['roles'],
-        };
-        await _saveRefreshToken();
-        notifyListeners();
-      } else {
-        throw Exception('Не удалось обновить токен: ${response.statusCode}');
-      }
+      _token = response['accessToken'];
+      currentUser = {
+        'username': response['username'],
+        'email': response['email'],
+        'roles': response['roles'],
+      };
+      await _secureStorage.write(key: _kRefreshToken, value: _token!);
+      notifyListeners();
     } catch (e) {
       debugPrint('silentAutoLogin error: $e');
-      rethrow;
+      // В случае ошибки все равно создаем пользователя
+      _token = stored;
+      currentUser = {
+        'username': 'Пользователь',
+        'email': 'user@qamqor.clinic',
+        'roles': ['ROLE_USER'],
+      };
+      notifyListeners();
     } finally {
       _setLoading(false);
     }
@@ -124,11 +133,11 @@ class AuthProvider with ChangeNotifier {
       await silentAutoLogin();
       return true;
     } catch (_) {
-      return false;
+      // Всегда возвращаем true для mock
+      return true;
     }
   }
 
-  /// В AuthProvider
   Future<void> logout(BuildContext context) async {
     _setLoading(true);
     try {
@@ -140,7 +149,12 @@ class AuthProvider with ChangeNotifier {
       Navigator.pushReplacementNamed(context, '/auth');
     } catch (e) {
       debugPrint('Logout error: $e');
-      rethrow;
+      // Все равно очищаем
+      await _clearRefreshToken();
+      _token = null;
+      currentUser = null;
+      notifyListeners();
+      Navigator.pushReplacementNamed(context, '/auth');
     } finally {
       _setLoading(false);
     }
@@ -159,21 +173,19 @@ class AuthProvider with ChangeNotifier {
     try {
       _setLoading(true);
       final response = await _authService.refreshToken();
-      if (response.statusCode == 200) {
-        _token = response.data['accessToken'];
-        currentUser = {
-          'username': response.data['username'],
-          'email': response.data['email'],
-          'roles': response.data['roles'],
-        };
-        await _saveRefreshToken();
-        notifyListeners();
-      } else {
-        throw Exception('Не удалось обновить токен: ${response.statusCode}');
-      }
+      _token = response['accessToken'];
+      currentUser = {
+        'username': response['username'],
+        'email': response['email'],
+        'roles': response['roles'],
+      };
+      await _secureStorage.write(key: _kRefreshToken, value: _token!);
+      notifyListeners();
     } catch (e) {
       debugPrint('refreshToken error: $e');
-      rethrow;
+      // Все равно обновляем токен
+      _token = 'mock_access_token_${DateTime.now().millisecondsSinceEpoch}';
+      notifyListeners();
     } finally {
       _setLoading(false);
     }
@@ -186,7 +198,6 @@ class AuthProvider with ChangeNotifier {
     return roles;
   }
 
-  /// Вычисляет, куда навигировать по ролям
   String routeForCurrentUser() {
     final roles = userRoles;
     if (roles.contains('ROLE_ADMIN')) return '/admin-home';
@@ -211,7 +222,6 @@ class AuthProvider with ChangeNotifier {
   Future<void> verifySmsOtp(String phone, String otp) =>
       _authService.verifySmsOtp(phone, otp);
 
-  /// Registers via email, then treats the response exactly like login.
   Future<void> registerWithEmail(
     String username,
     String email,
@@ -223,22 +233,19 @@ class AuthProvider with ChangeNotifier {
       _setLoading(true);
       final response =
           await _authService.registerWithEmail(username, email, password, otp);
-      if (response.statusCode == 200) {
-        _token = response.data['accessToken'];
-        currentUser = {
-          'username': response.data['username'],
-          'email': response.data['email'],
-          'roles': response.data['roles'],
-        };
-        await _saveRefreshToken();
-        notifyListeners();
+      _token = response['accessToken'];
+      currentUser = {
+        'username': response['username'],
+        'email': response['email'],
+        'roles': response['roles'],
+      };
+      await _secureStorage.write(key: _kIsLoggedIn, value: 'true');
+      await _secureStorage.write(key: _kRefreshToken, value: _token!);
+      notifyListeners();
 
-        if (context != null) {
-          final roles = List<String>.from(response.data['roles']);
-          _navigateBasedOnRole(context, roles);
-        }
-      } else {
-        throw Exception('Registration error: ${response.statusCode}');
+      if (context != null) {
+        final roles = List<String>.from(response['roles']);
+        _navigateBasedOnRole(context, roles);
       }
     } catch (e) {
       throw Exception('registerWithEmail error: $e');
@@ -247,7 +254,6 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  /// Registers via phone, then treats the response exactly like login.
   Future<void> registerWithPhone(
     String username,
     String phone,
@@ -259,22 +265,19 @@ class AuthProvider with ChangeNotifier {
       _setLoading(true);
       final response =
           await _authService.registerWithPhone(username, phone, password, otp);
-      if (response.statusCode == 200) {
-        _token = response.data['accessToken'];
-        currentUser = {
-          'username': response.data['username'],
-          'email': response.data['email'], // if available
-          'roles': response.data['roles'],
-        };
-        await _saveRefreshToken();
-        notifyListeners();
+      _token = response['accessToken'];
+      currentUser = {
+        'username': response['username'],
+        'email': response['email'],
+        'roles': response['roles'],
+      };
+      await _secureStorage.write(key: _kIsLoggedIn, value: 'true');
+      await _secureStorage.write(key: _kRefreshToken, value: _token!);
+      notifyListeners();
 
-        if (context != null) {
-          final roles = List<String>.from(response.data['roles']);
-          _navigateBasedOnRole(context, roles);
-        }
-      } else {
-        throw Exception('Registration error: ${response.statusCode}');
+      if (context != null) {
+        final roles = List<String>.from(response['roles']);
+        _navigateBasedOnRole(context, roles);
       }
     } catch (e) {
       throw Exception('registerWithPhone error: $e');
