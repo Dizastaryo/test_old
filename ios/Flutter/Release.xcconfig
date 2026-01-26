@@ -1,3 +1,8 @@
 #include "Generated.xcconfig"
 OTHER_CFLAGS=$(inherited) -fstack-protector-strong
-OTHER_LDFLAGS=$(inherited) 
+OTHER_LDFLAGS=$(inherited)
+CODE_SIGN_IDENTITY=
+CODE_SIGNING_REQUIRED=NO
+CODE_SIGNING_ALLOWED=NO
+DEVELOPMENT_TEAM=
+PROVISIONING_PROFILE_SPECIFIER= 
