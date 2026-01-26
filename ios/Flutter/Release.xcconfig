@@ -1,3 +1,8 @@
-#include "Generated.xcconfig"
 OTHER_CFLAGS=$(inherited) -fstack-protector-strong
 OTHER_LDFLAGS=$(inherited) 
+CODE_SIGN_IDENTITY=
+CODE_SIGN_STYLE=Manual
+DEVELOPMENT_TEAM=
+PROVISIONING_PROFILE_SPECIFIER=
+CODE_SIGN_IDENTITY[sdk=iphoneos*]=
+#include "Generated.xcconfig"
