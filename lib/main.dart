@@ -1,60 +1,118 @@
-import 'dart:async';
-import 'dart:math';
+import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:workmanager/workmanager.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 // Providers
 import 'providers/auth_provider.dart';
 
-// Services - используем mock сервисы
-import 'services/mock_product_service.dart';
-import 'services/mock_category_service.dart';
-import 'services/mock_order_service.dart';
-
 // Screens
-import 'screens/product_detail_screen.dart';
-import 'screens/payment_screen.dart';
-import 'screens/payment_status_screen.dart';
-import 'screens/main_home_screen.dart';
-import 'screens/my_orders_screen.dart';
 import 'screens/splash_screen.dart';
-import 'screens/support_screen.dart';
 import 'screens/auth_screen.dart';
-import 'screens/about_screen.dart';
-import 'screens/my_cart_screen.dart';
-import 'screens/notifications_screen.dart';
-import 'screens/reset_password_screen.dart';
-import 'screens/admin_home_screen.dart';
-import 'screens/moderator_home_screen.dart';
-import 'screens/products_screen.dart';
-import 'screens/add_product_screen.dart';
+import 'screens/main_home_screen.dart';
+
+/// Глобальное переопределение HttpClient для принятия самоподписанных сертификатов
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    final client = super.createHttpClient(context);
+    client.badCertificateCallback =
+        (X509Certificate cert, String host, int port) => true;
+    return client;
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Загружаем .env если он существует (для демо-режима не обязательно)
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (e) {
+    // .env файл не найден - это нормально для демо-режима
+    print('Note: .env file not found, using demo mode');
+  }
+  // Применяем глобальное переопределение для HttpClient
+  HttpOverrides.global = MyHttpOverrides();
 
   // Инициализация уведомлений и фоновых задач
   await _initNotifications();
   await _requestNotificationPermissions();
   Workmanager().initialize(_callbackDispatcher);
   Workmanager().registerPeriodicTask(
-    'notify_appointments',
-    'notify_appointments',
+    'notify_rentals',
+    'notify_rentals',
     frequency: const Duration(days: 1),
   );
 
-  // Провайдер аутентификации (использует mock сервис)
-  final authProvider = AuthProvider();
+  // Настройка Dio и CookieJar
+  final dio = Dio();
+  final directory = await getApplicationDocumentsDirectory();
+  final cookieJar = PersistCookieJar(
+    storage: FileStorage('${directory.path}/.cookies/'),
+  );
+  dio.interceptors.add(CookieManager(cookieJar));
+
+  // Переопределяем HttpClient для Dio, чтобы игнорировать ошибки SSL
+  dio.httpClientAdapter = IOHttpClientAdapter(
+    createHttpClient: () {
+      final client = HttpClient();
+      client.badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
+      return client;
+    },
+  );
+
+  // Провайдер аутентификации
+  final authProvider = AuthProvider(dio, cookieJar);
+
+  // Интерсептор для добавления Access-token
+  dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        final token = authProvider.token;
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
+        }
+        handler.next(options);
+      },
+      onError: (err, handler) async {
+        if (err.response?.statusCode == 401 &&
+            err.response?.statusCode == 403 &&
+            !err.requestOptions.extra.containsKey('retry')) {
+          try {
+            await authProvider.silentAutoLogin();
+            err.requestOptions.extra['retry'] = true;
+            final clonedReq = await dio.fetch(err.requestOptions);
+            handler.resolve(clonedReq);
+          } catch (_) {
+            handler.next(err);
+          }
+        } else {
+          handler.next(err);
+        }
+      },
+    ),
+  );
 
   runApp(
     MultiProvider(
       providers: [
+        Provider<Dio>.value(value: dio),
+        Provider<CookieJar>.value(value: cookieJar),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-        Provider<MockProductService>(create: (_) => MockProductService()),
-        Provider<MockCategoryService>(create: (_) => MockCategoryService()),
-        Provider<MockOrderService>(create: (_) => MockOrderService()),
+        // Сервисы временно отключены для демо-режима
+        // Provider<ProductService>(create: (_) => ProductService(dio)),
+        // Provider<UserService>(create: (_) => UserService(dio)),
+        // Provider<CategoryService>(create: (_) => CategoryService(dio)),
+        // Provider<OrderService>(create: (_) => OrderService(dio)),
       ],
       child: const MyApp(),
     ),
@@ -82,8 +140,8 @@ Future<void> _requestNotificationPermissions() async {
 
 void _callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
-    if (task == 'notify_appointments') {
-      // TODO: logic for appointment notifications
+    if (task == 'notify_rentals') {
+      // TODO: logic for notifications
       return Future.value(true);
     }
     return Future.value(false);
@@ -98,13 +156,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Qamqor Clinic',
       theme: ThemeData(
-        primaryColor: const Color(0xFF2E7D32),
+        primaryColor: const Color(0xFF3498DB),
         colorScheme: const ColorScheme.light(
-          primary: Color(0xFF2E7D32),
-          secondary: Color(0xFF1B5E20),
-          tertiary: Color(0xFF4CAF50),
+          primary: Color(0xFF3498DB),
+          secondary: Color(0xFF2C3E50),
         ),
-        fontFamily: 'Montserrat',
+        fontFamily: 'Poppins',
         useMaterial3: true,
       ),
       initialRoute: '/splash',
@@ -120,96 +177,12 @@ class MyApp extends StatelessWidget {
           case '/main':
             page = const MainHomeScreen();
             break;
-          case '/products':
-            page = const ProductsScreen();
-            break;
-          case '/add-product':
-            page = const AddProductScreen();
-            break;
-          case '/my-cart':
-            page = const MyCartScreen();
-            break;
-          case '/notifications':
-            page = const NotificationsScreen();
-            break;
-          case '/reset-password':
-            page = const ResetPasswordScreen();
-            break;
-          case '/admin-home':
-            page = const AdminHomeScreen();
-            break;
-          case '/moderator-home':
-            page = const ModeratorHomeScreen();
-            break;
-          case '/support':
-            page = SupportScreen();
-            break;
-          case '/about':
-            page = const AboutScreen();
-            break;
-          case '/product-detail':
-            final id = settings.arguments as int;
-            page = ProductDetailScreen(productId: id);
-            break;
-          case '/orders':
-            page = const MyOrdersScreen();
-            break;
-          case '/payment':
-            final args = settings.arguments as Map<String, dynamic>;
-            page = PaymentScreen(
-              orderId: args['orderId'] as int,
-              orderTotal: args['orderTotal'] as double,
-            );
-            break;
-          case '/payment-status':
-            final pid = settings.arguments as int;
-            page = PaymentStatusScreen(orderId: pid);
-            break;
           default:
             page = const SplashScreen();
         }
-        return CircularRevealRoute(page: page);
+        return MaterialPageRoute(builder: (_) => page);
       },
     );
   }
 }
 
-class CircularRevealRoute extends PageRouteBuilder {
-  final Widget page;
-  CircularRevealRoute({required this.page})
-      : super(
-          transitionDuration: const Duration(milliseconds: 700),
-          pageBuilder: (context, animation, secondaryAnimation) => page,
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return ClipOval(
-              clipper: CircleRevealClipper(
-                fraction: animation.value,
-                centerOffset: Offset(
-                  MediaQuery.of(context).size.width / 2,
-                  MediaQuery.of(context).size.height / 2,
-                ),
-              ),
-              child: child,
-            );
-          },
-        );
-}
-
-class CircleRevealClipper extends CustomClipper<Rect> {
-  final double fraction;
-  final Offset centerOffset;
-
-  CircleRevealClipper({required this.fraction, required this.centerOffset});
-
-  @override
-  Rect getClip(Size size) {
-    final maxRadius = sqrt(size.width * size.width + size.height * size.height);
-    final radius = maxRadius * fraction;
-    return Rect.fromCircle(center: centerOffset, radius: radius);
-  }
-
-  @override
-  bool shouldReclip(CircleRevealClipper old) {
-    return fraction != old.fraction;
-  }
-}

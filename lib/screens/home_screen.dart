@@ -5,9 +5,6 @@ import 'my_cart_screen.dart';
 import 'notifications_screen.dart';
 import 'my_orders_screen.dart';
 
-// Для совместимости с mock сервисами
-typedef ProductService = MockProductService;
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
   @override
@@ -56,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const SizedBox(width: 12),
             const Text(
-              'Qamqor Clinic',
+              'Aidyn Market',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -94,19 +91,19 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: (index) => setState(() => _currentPage = index),
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.medical_services_outlined),
-            activeIcon: Icon(Icons.medical_services),
-            label: 'Услуги',
+            icon: Icon(Icons.dashboard_outlined),
+            activeIcon: Icon(Icons.dashboard),
+            label: 'Продукты',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today_outlined),
-            activeIcon: Icon(Icons.calendar_today),
-            label: 'Запись',
+            icon: Icon(Icons.shopping_cart_outlined),
+            activeIcon: Icon(Icons.shopping_cart),
+            label: 'Корзина',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.event_note_outlined),
-            activeIcon: Icon(Icons.event_note),
-            label: 'Мои записи',
+            icon: Icon(Icons.receipt_long_outlined),
+            activeIcon: Icon(Icons.receipt_long),
+            label: 'Мои заказы',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.account_circle_outlined),

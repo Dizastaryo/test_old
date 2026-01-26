@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../services/mock_product_service.dart';
-import '../models/product.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
-/// Экран записи на прием с календарем и выбором врача/услуги
 class AppointmentScreen extends StatefulWidget {
   const AppointmentScreen({super.key});
 
@@ -12,14 +10,29 @@ class AppointmentScreen extends StatefulWidget {
 }
 
 class _AppointmentScreenState extends State<AppointmentScreen> {
+  String? _selectedService;
+  String? _selectedDoctor;
   DateTime? _selectedDate;
   String? _selectedTime;
-  Product? _selectedService;
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _symptomsController = TextEditingController();
 
-  final List<String> _availableTimes = [
+  final List<String> _services = [
+    'Терапия',
+    'Кардиология',
+    'Неврология',
+    'Стоматология',
+    'Офтальмология',
+    'Дерматология',
+  ];
+
+  final List<Map<String, dynamic>> _doctors = [
+    {'name': 'Др. Айдын Нурланов', 'specialty': 'Терапевт'},
+    {'name': 'Др. Айжан Касымова', 'specialty': 'Кардиолог'},
+    {'name': 'Др. Ерлан Сабитов', 'specialty': 'Невролог'},
+    {'name': 'Др. Мария Ибрагимова', 'specialty': 'Стоматолог'},
+  ];
+
+  final List<String> _timeSlots = [
     '09:00',
     '10:00',
     '11:00',
@@ -32,30 +45,28 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _phoneController.dispose();
-    _notesController.dispose();
+    _symptomsController.dispose();
     super.dispose();
   }
 
-  Future<void> _selectDate() async {
+  Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: DateTime.now().add(Duration(days: 1)),
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
+      lastDate: DateTime.now().add(Duration(days: 30)),
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF2E7D32),
-            ),
+          data: ThemeData.light().copyWith(
+            primaryColor: Color(0xFF3498DB),
+            colorScheme: ColorScheme.light(primary: Color(0xFF3498DB)),
+            buttonTheme: ButtonThemeData(textTheme: ButtonTextTheme.primary),
           ),
           child: child!,
         );
       },
     );
-    if (picked != null) {
+    if (picked != null && picked != _selectedDate) {
       setState(() {
         _selectedDate = picked;
         _selectedTime = null; // Сброс времени при смене даты
@@ -63,113 +74,28 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
     }
   }
 
-  void _selectService() async {
-    final productService = Provider.of<MockProductService>(context, listen: false);
-    final services = await productService.getProducts();
-
-    final service = await showModalBottomSheet<Product>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) => Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Text(
-                'Выберите услугу',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            Expanded(
-              child: ListView.builder(
-                controller: scrollController,
-                itemCount: services.length,
-                itemBuilder: (context, index) {
-                  final service = services[index];
-                  return ListTile(
-                    leading: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2E7D32).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.medical_services,
-                        color: Color(0xFF2E7D32),
-                      ),
-                    ),
-                    title: Text(service.name),
-                    subtitle: Text('${service.price.toStringAsFixed(0)} ₸'),
-                    onTap: () => Navigator.pop(context, service),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (service != null) {
-      setState(() => _selectedService = service);
-    }
-  }
-
-  void _submitAppointment() {
-    if (_selectedDate == null || _selectedTime == null || _selectedService == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Заполните все поля'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (_nameController.text.isEmpty || _phoneController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Заполните имя и телефон'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    // Показываем подтверждение
+  void _showSuccessDialog() {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Запись подтверждена'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
           children: [
-            Text('Услуга: ${_selectedService!.name}'),
-            Text('Дата: ${_selectedDate!.day}.${_selectedDate!.month}.${_selectedDate!.year}'),
-            Text('Время: $_selectedTime'),
-            Text('Имя: ${_nameController.text}'),
-            Text('Телефон: ${_phoneController.text}'),
+            Icon(Icons.check_circle, color: Color(0xFF27AE60), size: 32),
+            SizedBox(width: 12),
+            Text(
+              'Запись создана!',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
+        ),
+        content: Text(
+          'Вы успешно записались на прием. Мы отправили вам подтверждение.',
+          style: GoogleFonts.poppins(),
         ),
         actions: [
           TextButton(
@@ -177,15 +103,20 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
               Navigator.pop(context);
               // Сброс формы
               setState(() {
+                _selectedService = null;
+                _selectedDoctor = null;
                 _selectedDate = null;
                 _selectedTime = null;
-                _selectedService = null;
-                _nameController.clear();
-                _phoneController.clear();
-                _notesController.clear();
+                _symptomsController.clear();
               });
             },
-            child: const Text('OK'),
+            child: Text(
+              'ОК',
+              style: GoogleFonts.poppins(
+                color: Color(0xFF3498DB),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -195,222 +126,378 @@ class _AppointmentScreenState extends State<AppointmentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Запись на прием'),
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
+        backgroundColor: Color(0xFF2C3E50),
+        elevation: 0,
+        title: Text(
+          'Запись на прием',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Выбор услуги
-            _SectionTitle('Выберите услугу'),
-            const SizedBox(height: 8),
-            Card(
-              child: InkWell(
-                onTap: _selectService,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2E7D32).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.medical_services,
-                          color: Color(0xFF2E7D32),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _selectedService?.name ?? 'Выберите услугу',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: _selectedService != null
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                color: _selectedService != null
-                                    ? Colors.black
-                                    : Colors.grey,
-                              ),
-                            ),
-                            if (_selectedService != null)
-                              Text(
-                                '${_selectedService!.price.toStringAsFixed(0)} ₸',
-                                style: const TextStyle(
-                                  color: Color(0xFF2E7D32),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_ios, size: 20),
-                    ],
-                  ),
+            // Информационная карточка
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF3498DB), Color(0xFF2980B9)],
                 ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color(0xFF3498DB).withOpacity(0.3),
+                    blurRadius: 15,
+                    offset: Offset(0, 5),
+                  ),
+                ],
               ),
-            ),
+              child: Column(
+                children: [
+                  Icon(Icons.calendar_today, color: Colors.white, size: 40),
+                  SizedBox(height: 12),
+                  Text(
+                    'Выберите удобное время',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Заполните форму для записи к врачу',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+                .animate()
+                .fadeIn(delay: 100.ms)
+                .slideY(begin: -0.2, end: 0),
 
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
+
+            // Выбор услуги
+            _buildSectionTitle('Выберите услугу')
+                .animate()
+                .fadeIn(delay: 200.ms),
+            SizedBox(height: 12),
+            _buildServiceSelector()
+                .animate()
+                .fadeIn(delay: 300.ms)
+                .slideX(begin: -0.2, end: 0),
+
+            SizedBox(height: 24),
+
+            // Выбор врача
+            _buildSectionTitle('Выберите врача')
+                .animate()
+                .fadeIn(delay: 400.ms),
+            SizedBox(height: 12),
+            _buildDoctorSelector()
+                .animate()
+                .fadeIn(delay: 500.ms)
+                .slideX(begin: -0.2, end: 0),
+
+            SizedBox(height: 24),
 
             // Выбор даты
-            _SectionTitle('Выберите дату'),
-            const SizedBox(height: 8),
-            Card(
-              child: InkWell(
-                onTap: _selectDate,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2E7D32).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.calendar_today,
-                          color: Color(0xFF2E7D32),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Text(
-                          _selectedDate != null
-                              ? '${_selectedDate!.day}.${_selectedDate!.month}.${_selectedDate!.year}'
-                              : 'Выберите дату',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: _selectedDate != null ? Colors.black : Colors.grey,
-                          ),
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_ios, size: 20),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            _buildSectionTitle('Выберите дату')
+                .animate()
+                .fadeIn(delay: 600.ms),
+            SizedBox(height: 12),
+            _buildDateSelector()
+                .animate()
+                .fadeIn(delay: 700.ms)
+                .slideX(begin: -0.2, end: 0),
 
+            SizedBox(height: 24),
+
+            // Выбор времени
             if (_selectedDate != null) ...[
-              const SizedBox(height: 16),
-              _SectionTitle('Выберите время'),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _availableTimes.map((time) {
-                  final isSelected = _selectedTime == time;
-                  return FilterChip(
-                    label: Text(time),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() => _selectedTime = selected ? time : null);
-                    },
-                    selectedColor: const Color(0xFF2E7D32),
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : Colors.black,
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  );
-                }).toList(),
-              ),
+              _buildSectionTitle('Выберите время')
+                  .animate()
+                  .fadeIn(delay: 800.ms),
+              SizedBox(height: 12),
+              _buildTimeSelector()
+                  .animate()
+                  .fadeIn(delay: 900.ms)
+                  .slideX(begin: -0.2, end: 0),
+              SizedBox(height: 24),
             ],
 
-            const SizedBox(height: 24),
+            // Симптомы/Жалобы
+            _buildSectionTitle('Опишите симптомы (необязательно)')
+                .animate()
+                .fadeIn(delay: 1000.ms),
+            SizedBox(height: 12),
+            _buildSymptomsField()
+                .animate()
+                .fadeIn(delay: 1100.ms)
+                .slideY(begin: 0.2, end: 0),
 
-            // Контактная информация
-            _SectionTitle('Контактная информация'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                labelText: 'Ваше имя',
-                prefixIcon: const Icon(Icons.person),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _phoneController,
-              decoration: InputDecoration(
-                labelText: 'Телефон',
-                prefixIcon: const Icon(Icons.phone),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              keyboardType: TextInputType.phone,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _notesController,
-              decoration: InputDecoration(
-                labelText: 'Дополнительные заметки (необязательно)',
-                prefixIcon: const Icon(Icons.note),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              maxLines: 3,
-            ),
-
-            const SizedBox(height: 32),
+            SizedBox(height: 32),
 
             // Кнопка записи
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: _submitAppointment,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 2,
-                ),
-                child: const Text(
-                  'Записаться на прием',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
+            _buildSubmitButton()
+                .animate()
+                .fadeIn(delay: 1200.ms)
+                .slideY(begin: 0.2, end: 0),
           ],
         ),
       ),
     );
   }
-}
 
-class _SectionTitle extends StatelessWidget {
-  final String title;
-
-  const _SectionTitle(this.title);
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildSectionTitle(String title) {
     return Text(
       title,
-      style: const TextStyle(
+      style: GoogleFonts.poppins(
         fontSize: 18,
         fontWeight: FontWeight.bold,
+        color: Color(0xFF2C3E50),
+      ),
+    );
+  }
+
+  Widget _buildServiceSelector() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<String>(
+        value: _selectedService,
+        decoration: InputDecoration(
+          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          border: InputBorder.none,
+          prefixIcon: Icon(Icons.medical_services, color: Color(0xFF3498DB)),
+        ),
+        hint: Text('Выберите услугу', style: GoogleFonts.poppins()),
+        items: _services.map((service) {
+          return DropdownMenuItem(
+            value: service,
+            child: Text(service, style: GoogleFonts.poppins()),
+          );
+        }).toList(),
+        onChanged: (value) {
+          setState(() {
+            _selectedService = value;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildDoctorSelector() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<String>(
+        value: _selectedDoctor,
+        decoration: InputDecoration(
+          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          border: InputBorder.none,
+          prefixIcon: Icon(Icons.person, color: Color(0xFF3498DB)),
+        ),
+        hint: Text('Выберите врача', style: GoogleFonts.poppins()),
+        items: _doctors.map((doctor) {
+          return DropdownMenuItem(
+            value: doctor['name'],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(doctor['name'], style: GoogleFonts.poppins()),
+                Text(
+                  doctor['specialty'],
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+        onChanged: (value) {
+          setState(() {
+            _selectedDoctor = value;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildDateSelector() {
+    return GestureDetector(
+      onTap: () => _selectDate(context),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.calendar_today, color: Color(0xFF3498DB)),
+            SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                _selectedDate != null
+                    ? '${_selectedDate!.day}.${_selectedDate!.month}.${_selectedDate!.year}'
+                    : 'Выберите дату',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: _selectedDate != null ? Colors.black : Colors.grey,
+                ),
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeSelector() {
+    return Container(
+      height: 120,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _timeSlots.length,
+        itemBuilder: (context, index) {
+          final time = _timeSlots[index];
+          final isSelected = _selectedTime == time;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _selectedTime = time;
+              });
+            },
+            child: Container(
+              width: 100,
+              margin: EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                color: isSelected ? Color(0xFF3498DB) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  time,
+                  style: GoogleFonts.poppins(
+                    color: isSelected ? Colors.white : Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSymptomsField() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 5),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: _symptomsController,
+        maxLines: 4,
+        decoration: InputDecoration(
+          hintText: 'Опишите ваши симптомы или жалобы...',
+          hintStyle: GoogleFonts.poppins(color: Colors.grey),
+          contentPadding: EdgeInsets.all(20),
+          border: InputBorder.none,
+        ),
+        style: GoogleFonts.poppins(),
+      ),
+    );
+  }
+
+  Widget _buildSubmitButton() {
+    final isEnabled = _selectedService != null &&
+        _selectedDoctor != null &&
+        _selectedDate != null &&
+        _selectedTime != null;
+
+    return ElevatedButton(
+      onPressed: isEnabled
+          ? () {
+              // Заглушка - просто показываем диалог успеха
+              _showSuccessDialog();
+            }
+          : null,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Color(0xFF3498DB),
+        disabledBackgroundColor: Colors.grey[300],
+        padding: EdgeInsets.symmetric(vertical: 18),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        elevation: 5,
+      ),
+      child: Text(
+        'Записаться на прием',
+        style: GoogleFonts.poppins(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
       ),
     );
   }

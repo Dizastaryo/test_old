@@ -1,5 +1,5 @@
 name: qamqor_clinic
-description: "Qamqor Clinic - мобильное приложение частной клиники"
+description: "Qamqor Clinic - Private clinic mobile application."
 publish_to: 'none'  # Уберите эту строку, если хотите опубликовать на pub.dev
 version: 1.0.0+1
 

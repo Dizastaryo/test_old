@@ -1,5 +1,4 @@
 import '../models/product.dart';
-import '../models/review.dart';
 
 /// Mock сервис для услуг клиники (вместо продуктов)
 class MockProductService {
@@ -171,28 +170,5 @@ class MockProductService {
 
   String getImageUrl(String imagePath) {
     return imagePath.startsWith('http') ? imagePath : placeholderImageUrl;
-  }
-
-  // Mock методы для отзывов
-  Future<Review> addReview({
-    required int productId,
-    required int rating,
-    String? comment,
-  }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return Review(
-      id: DateTime.now().millisecondsSinceEpoch,
-      productId: productId,
-      userId: 1,
-      rating: rating,
-      comment: comment,
-      createdAt: DateTime.now(),
-    );
-  }
-
-  Future<List<Review>> getReviewsForProduct(int productId) async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    // Возвращаем пустой список отзывов для mock
-    return [];
   }
 }

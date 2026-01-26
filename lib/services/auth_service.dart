@@ -2,8 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthService {
-  // Берём базовый URL аутентификации из .env
-  final String _authBaseUrl = dotenv.env['AUTH_BASE_URL']!;
+  // Берём базовый URL аутентификации из .env (с fallback для демо)
+  final String _authBaseUrl = dotenv.env['AUTH_BASE_URL'] ?? 'https://demo.qamqor.kz';
   final Dio dio;
 
   AuthService(this.dio);

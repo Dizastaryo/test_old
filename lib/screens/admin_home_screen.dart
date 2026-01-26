@@ -25,7 +25,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       appBar: AppBar(
         title: const Text('Панель администратора'),
         centerTitle: true,
-        backgroundColor: const Color(0xFF2E7D32),
+        backgroundColor: Color(0xFF6A0DAD),
         automaticallyImplyLeading: false,
       ),
       body: AnimatedSwitcher(
@@ -34,7 +34,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentPage,
-        selectedItemColor: const Color(0xFF2E7D32),
+        selectedItemColor: Color(0xFF6A0DAD),
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,

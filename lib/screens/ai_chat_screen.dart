@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
-/// Экран чата с ИИ помощником
 class AiChatScreen extends StatefulWidget {
   const AiChatScreen({super.key});
 
@@ -11,15 +11,16 @@ class AiChatScreen extends StatefulWidget {
 
 class _AiChatScreenState extends State<AiChatScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
+  final ScrollController _scrollController = ScrollController();
+  bool _isTyping = false;
 
   @override
   void initState() {
     super.initState();
     // Приветственное сообщение
     _messages.add(ChatMessage(
-      text: 'Здравствуйте! Я ваш виртуальный помощник Qamqor Clinic. Чем могу помочь?',
+      text: 'Здравствуйте! Я AI-ассистент клиники Qamqor. Чем могу помочь?',
       isUser: false,
       timestamp: DateTime.now(),
     ));
@@ -42,65 +43,43 @@ class _AiChatScreenState extends State<AiChatScreen> {
         isUser: true,
         timestamp: DateTime.now(),
       ));
+      _isTyping = true;
     });
 
     _messageController.clear();
     _scrollToBottom();
 
-    // Имитация ответа ИИ
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      _addAiResponse(text);
+    // Заглушка ответа ИИ
+    Future.delayed(Duration(seconds: 1), () {
+      setState(() {
+        _isTyping = false;
+        _messages.add(ChatMessage(
+          text: _generateMockResponse(text),
+          isUser: false,
+          timestamp: DateTime.now(),
+        ));
+      });
+      _scrollToBottom();
     });
   }
 
-  void _addAiResponse(String userMessage) {
-    String response = _generateAiResponse(userMessage.toLowerCase());
+  String _generateMockResponse(String userMessage) {
+    final lowerMessage = userMessage.toLowerCase();
     
-    setState(() {
-      _messages.add(ChatMessage(
-        text: response,
-        isUser: false,
-        timestamp: DateTime.now(),
-      ));
-    });
-
-    _scrollToBottom();
-  }
-
-  String _generateAiResponse(String message) {
-    // Простая логика ответов (можно заменить на реальный AI API)
-    if (message.contains('запись') || message.contains('записаться')) {
-      return 'Для записи на прием перейдите на вкладку "Запись" в нижнем меню. Там вы сможете выбрать услугу, дату и время приема.';
-    } else if (message.contains('услуг') || message.contains('что вы')) {
-      return 'Мы предлагаем широкий спектр медицинских услуг:\n\n'
-          '• Консультации врачей (терапевт, кардиолог, невролог)\n'
-          '• Диагностика (УЗИ, анализы)\n'
-          '• Лечебные процедуры (массаж, физиотерапия)\n\n'
-          'Подробнее об услугах можно узнать на главной странице.';
-    } else if (message.contains('цена') || message.contains('стоимость') || message.contains('сколько')) {
-      return 'Стоимость услуг варьируется:\n\n'
-          '• Консультации: от 5000 до 8000 ₸\n'
-          '• Диагностика: от 2500 до 7000 ₸\n'
-          '• Процедуры: от 5000 ₸\n\n'
-          'Точную стоимость можно узнать при выборе услуги.';
-    } else if (message.contains('адрес') || message.contains('где') || message.contains('локация')) {
-      return 'Наша клиника находится по адресу:\n\n'
-          '📍 г. Алматы, ул. Примерная, д. 123\n\n'
-          'Мы работаем:\n'
-          'Пн-Пт: 9:00 - 18:00\n'
-          'Сб: 9:00 - 15:00\n'
-          'Вс: Выходной';
-    } else if (message.contains('привет') || message.contains('здравствуй')) {
-      return 'Здравствуйте! Рад помочь вам. Задайте любой вопрос о наших услугах, записи на прием или работе клиники.';
-    } else if (message.contains('спасибо') || message.contains('благодар')) {
-      return 'Пожалуйста! Если у вас возникнут еще вопросы, обращайтесь. Будьте здоровы!';
+    if (lowerMessage.contains('симптом') || lowerMessage.contains('болит') || lowerMessage.contains('боль')) {
+      return 'Понимаю ваше беспокойство. Рекомендую записаться на прием к врачу для консультации. Вы можете сделать это прямо в приложении, выбрав раздел "Запись".';
+    } else if (lowerMessage.contains('запись') || lowerMessage.contains('записаться')) {
+      return 'Для записи на прием перейдите в раздел "Запись" в нижнем меню. Там вы сможете выбрать врача, дату и время приема.';
+    } else if (lowerMessage.contains('врач') || lowerMessage.contains('доктор')) {
+      return 'В нашей клинике работают опытные специалисты в различных областях: терапия, кардиология, неврология, стоматология и другие. Вы можете выбрать врача при записи на прием.';
+    } else if (lowerMessage.contains('время') || lowerMessage.contains('часы') || lowerMessage.contains('работа')) {
+      return 'Клиника работает с понедельника по пятницу с 9:00 до 18:00. Выходные: суббота и воскресенье.';
+    } else if (lowerMessage.contains('адрес') || lowerMessage.contains('где') || lowerMessage.contains('локация')) {
+      return 'Клиника Qamqor находится по адресу: г. Алматы, ул. Абая 150. Телефон: +7 (727) 123-45-67';
+    } else if (lowerMessage.contains('привет') || lowerMessage.contains('здравствуй')) {
+      return 'Здравствуйте! Рад помочь вам. Что вас интересует?';
     } else {
-      return 'Спасибо за ваш вопрос! Я могу помочь вам с:\n\n'
-          '• Информацией об услугах\n'
-          '• Записью на прием\n'
-          '• Стоимостью услуг\n'
-          '• Адресом и режимом работы\n\n'
-          'Задайте более конкретный вопрос, и я постараюсь помочь!';
+      return 'Спасибо за ваш вопрос. Для получения более подробной информации рекомендую записаться на консультацию к нашему специалисту. Я могу помочь вам с записью или ответить на общие вопросы о клинике.';
     }
   }
 
@@ -109,7 +88,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
@@ -119,85 +98,252 @@ class _AiChatScreenState extends State<AiChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Row(
+        backgroundColor: Color(0xFF2C3E50),
+        elevation: 0,
+        title: Row(
           children: [
-            CircleAvatar(
-              backgroundColor: Colors.white,
-              child: Icon(Icons.smart_toy, color: Color(0xFF2E7D32)),
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Color(0xFF3498DB),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.smart_toy, color: Colors.white),
             ),
             SizedBox(width: 12),
-            Text('Чат с ИИ помощником'),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'AI Ассистент',
+                  style: GoogleFonts.poppins(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                Text(
+                  'Qamqor Clinic',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
+        centerTitle: false,
       ),
       body: Column(
         children: [
+          // Список сообщений
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
+              padding: EdgeInsets.all(16),
+              itemCount: _messages.length + (_isTyping ? 1 : 0),
               itemBuilder: (context, index) {
-                return _ChatBubble(message: _messages[index]);
+                if (index == _messages.length) {
+                  // Индикатор печати
+                  return _buildTypingIndicator();
+                }
+                return _buildMessage(_messages[index]);
               },
             ),
           ),
+
+          // Поле ввода
           Container(
-            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
                   blurRadius: 10,
-                  offset: const Offset(0, -2),
+                  offset: Offset(0, -2),
                 ),
               ],
             ),
             child: SafeArea(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: InputDecoration(
-                        hintText: 'Напишите сообщение...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(25),
                         ),
-                        filled: true,
-                        fillColor: Colors.grey[100],
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 12,
+                        child: TextField(
+                          controller: _messageController,
+                          decoration: InputDecoration(
+                            hintText: 'Напишите сообщение...',
+                            hintStyle: GoogleFonts.poppins(
+                              color: Colors.grey[600],
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 12,
+                            ),
+                            border: InputBorder.none,
+                          ),
+                          style: GoogleFonts.poppins(),
+                          maxLines: null,
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (_) => _sendMessage(),
                         ),
                       ),
-                      maxLines: null,
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (_) => _sendMessage(),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2E7D32),
-                      shape: BoxShape.circle,
+                    SizedBox(width: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Color(0xFF3498DB),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.send, color: Colors.white),
+                        onPressed: _sendMessage,
+                      ),
                     ),
-                    child: IconButton(
-                      icon: const Icon(Icons.send, color: Colors.white),
-                      onPressed: _sendMessage,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMessage(ChatMessage message) {
+    return Align(
+      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: EdgeInsets.only(bottom: 12),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
+        child: Column(
+          crossAxisAlignment: message.isUser
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: message.isUser
+                    ? Color(0xFF3498DB)
+                    : Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                  bottomLeft: Radius.circular(
+                    message.isUser ? 20 : 0,
+                  ),
+                  bottomRight: Radius.circular(
+                    message.isUser ? 0 : 20,
+                  ),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 5,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Text(
+                message.text,
+                style: GoogleFonts.poppins(
+                  color: message.isUser ? Colors.white : Colors.black87,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '${message.timestamp.hour.toString().padLeft(2, '0')}:${message.timestamp.minute.toString().padLeft(2, '0')}',
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+      )
+          .animate()
+          .fadeIn(duration: 300.ms)
+          .slideX(
+            begin: message.isUser ? 0.2 : -0.2,
+            end: 0,
+            duration: 300.ms,
+          ),
+    );
+  }
+
+  Widget _buildTypingIndicator() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: EdgeInsets.only(bottom: 12),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+            bottomRight: Radius.circular(20),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 5,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildDot(0),
+            SizedBox(width: 4),
+            _buildDot(1),
+            SizedBox(width: 4),
+            _buildDot(2),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDot(int index) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: Duration(milliseconds: 600),
+      curve: Curves.easeInOut,
+      builder: (context, value, child) {
+        final delay = index * 0.2;
+        final animationValue = ((value + delay) % 1.0);
+        return Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: Color(0xFF3498DB).withOpacity(
+              animationValue > 0.5 ? 1.0 : 0.3,
+            ),
+            shape: BoxShape.circle,
+          ),
+        );
+      },
+      onEnd: () {
+        if (mounted && _isTyping) {
+          setState(() {});
+        }
+      },
     );
   }
 }
@@ -212,78 +358,4 @@ class ChatMessage {
     required this.isUser,
     required this.timestamp,
   });
-}
-
-class _ChatBubble extends StatelessWidget {
-  final ChatMessage message;
-
-  const _ChatBubble({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment:
-            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!message.isUser) ...[
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32).withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.smart_toy,
-                color: Color(0xFF2E7D32),
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: message.isUser
-                    ? const Color(0xFF2E7D32)
-                    : Colors.grey[200],
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(20),
-                  topRight: const Radius.circular(20),
-                  bottomLeft: Radius.circular(message.isUser ? 20 : 4),
-                  bottomRight: Radius.circular(message.isUser ? 4 : 20),
-                ),
-              ),
-              child: Text(
-                message.text,
-                style: TextStyle(
-                  color: message.isUser ? Colors.white : Colors.black87,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
-          if (message.isUser) ...[
-            const SizedBox(width: 8),
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.person,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 }

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:lottie/lottie.dart';
-import '../providers/auth_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-
-enum RegistrationMode { email, phone }
+import '../providers/auth_provider.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -16,21 +14,7 @@ class AuthScreen extends StatefulWidget {
 class _AuthScreenState extends State<AuthScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
-  final _regKey = GlobalKey<FormState>();
-  final _loginKey = GlobalKey<FormState>();
-  final _usernameCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
-  final _otpCtrl = TextEditingController();
-  final _passCtrl = TextEditingController();
-  final _loginCtrl = TextEditingController();
-  final _loginPassCtrl = TextEditingController();
-
-  RegistrationMode _regMode = RegistrationMode.email;
-  bool _codeSent = false;
   bool _loading = false;
-  bool _passVisible = false;
 
   @override
   void initState() {
@@ -38,257 +22,23 @@ class _AuthScreenState extends State<AuthScreen>
     _tabController = TabController(length: 2, vsync: this);
   }
 
-  void _showSnack(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-
-  InputDecoration _inputDec(String hint, IconData icon) => InputDecoration(
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.9),
-        hintText: hint,
-        prefixIcon: Icon(icon, color: const Color(0xFF2E7D32)),
-        contentPadding: const EdgeInsets.symmetric(vertical: 14),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF2E7D32)),
-        ),
-      );
-
-  Widget _buildToggle() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: RegistrationMode.values.map((mode) {
-        final selected = mode == _regMode;
-        return AnimatedContainer(
-          duration: 300.ms,
-          margin: const EdgeInsets.symmetric(horizontal: 8),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? const Color(0xFF2E7D32) : Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                        color: const Color(0xFF2E7D32).withOpacity(0.4),
-                        blurRadius: 8)
-                  ]
-                : null,
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: () => setState(() {
-              _regMode = mode;
-              _codeSent = false;
-            }),
-            child: Text(
-              mode == RegistrationMode.email ? 'Емайл' : 'Номер',
-              style: TextStyle(
-                color: selected ? Colors.white : const Color(0xFF2E7D32),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        );
-      }).toList(),
-    );
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
-  Widget _buildText(String hint, IconData icon, TextEditingController ctrl,
-      String? Function(String?) validator,
-      {bool obscure = false, VoidCallback? toggle}) {
-    return TextFormField(
-      controller: ctrl,
-      validator: validator,
-      obscureText: obscure,
-      decoration: _inputDec(hint, icon).copyWith(
-        suffixIcon: toggle != null
-            ? IconButton(
-                icon: Icon(obscure ? Icons.visibility_off : Icons.visibility,
-                    color: Colors.deepPurple),
-                onPressed: toggle,
-              )
-            : null,
-      ),
-    );
-  }
-
-  Widget _buildRegister() {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    return Form(
-      key: _regKey,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-        children: [
-          _buildToggle(),
-          const SizedBox(height: 24),
-          if (!_codeSent) ...[
-            if (_regMode == RegistrationMode.email)
-              _buildText(
-                'Емайл',
-                Icons.email,
-                _emailCtrl,
-                (v) => v!.isEmpty ? 'Введите email' : null,
-              ),
-            if (_regMode == RegistrationMode.phone)
-              _buildText(
-                'Номер',
-                Icons.phone,
-                _phoneCtrl,
-                (v) => v!.isEmpty ? 'Введите номер телефона' : null,
-              ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              onPressed: () async {
-                if (_regKey.currentState!.validate()) {
-                  setState(() => _loading = true);
-                  try {
-                    // Упрощенная авторизация - сразу переходим к вводу кода
-                    setState(() => _codeSent = true);
-                    _showSnack('Код: 1234 (заглушка)');
-                  } catch (e) {
-                    _showSnack('Ошибка: $e');
-                  } finally {
-                    setState(() => _loading = false);
-                  }
-                }
-              },
-              child: const Text('Отправить код'),
-            ),
-          ],
-          if (_codeSent) ...[
-            _buildText(
-              'Введите код',
-              Icons.sms,
-              _otpCtrl,
-              (v) => v!.isEmpty ? 'Введите код' : null,
-            ),
-            const SizedBox(height: 16),
-            _buildText(
-              'Логин',
-              Icons.person,
-              _usernameCtrl,
-              (v) => v!.isEmpty ? 'Введите логин' : null,
-            ),
-            const SizedBox(height: 16),
-            _buildText(
-              'Пароль',
-              Icons.lock,
-              _passCtrl,
-              (v) => v!.length < 6 ? 'Минимум 6 символов' : null,
-              obscure: !_passVisible,
-              toggle: () => setState(() => _passVisible = !_passVisible),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              onPressed: () async {
-                if (_regKey.currentState!.validate()) {
-                  setState(() => _loading = true);
-                  try {
-                    // Упрощенная регистрация - всегда успешно
-                    if (_regMode == RegistrationMode.email) {
-                      await auth.registerWithEmail(
-                        _usernameCtrl.text.trim(),
-                        _emailCtrl.text.trim(),
-                        _passCtrl.text.trim(),
-                        _otpCtrl.text.trim(),
-                        context,
-                      );
-                    } else {
-                      await auth.registerWithPhone(
-                        _usernameCtrl.text.trim(),
-                        _phoneCtrl.text.trim(),
-                        _passCtrl.text.trim(),
-                        _otpCtrl.text.trim(),
-                        context,
-                      );
-                    }
-                  } catch (e) {
-                    _showSnack('Ошибка: $e');
-                  } finally {
-                    setState(() => _loading = false);
-                  }
-                }
-              },
-              child: const Text('Завершить регистрацию'),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLogin() {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    return Form(
-      key: _loginKey,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-        children: [
-          _buildText(
-            'Емайл или номер или логин',
-            Icons.person,
-            _loginCtrl,
-            (v) => v!.isEmpty ? 'Введите логин' : null,
-          ),
-          const SizedBox(height: 16),
-          _buildText(
-            'Пароль',
-            Icons.lock,
-            _loginPassCtrl,
-            (v) => v!.length < 6 ? 'Минимум 6 символов' : null,
-            obscure: !_passVisible,
-            toggle: () => setState(() => _passVisible = !_passVisible),
-          ),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-              onPressed: () async {
-                if (_loginKey.currentState!.validate()) {
-                  setState(() => _loading = true);
-                  try {
-                    // Упрощенный вход - всегда успешно
-                    await auth.login(
-                      _loginCtrl.text.trim(),
-                      _loginPassCtrl.text.trim(),
-                      context,
-                    );
-                  } catch (e) {
-                    _showSnack('Ошибка: $e');
-                  } finally {
-                    setState(() => _loading = false);
-                  }
-                }
-              },
-            child: const Text('Войти'),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: () => Navigator.pushNamed(context, '/reset-password'),
-            child: const Text('Забыли пароль?'),
-          ),
-        ],
-      ),
-    );
+  Future<void> _autoLogin() async {
+    setState(() => _loading = true);
+    
+    // Заглушка - автоматический вход
+    final auth = context.read<AuthProvider>();
+    await auth.mockLogin();
+    
+    setState(() => _loading = false);
+    
+    // Переходим на главный экран
+    Navigator.pushReplacementNamed(context, '/main');
   }
 
   @override
@@ -296,73 +46,158 @@ class _AuthScreenState extends State<AuthScreen>
     return Scaffold(
       body: Stack(
         children: [
+          // Градиентный фон
           Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFE8F5E9), Color(0xFFC8E6C9)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF2C3E50),
+                  Color(0xFF34495E),
+                  Color(0xFF3498DB),
+                ],
               ),
             ),
           ),
-          Center(
-            child: Lottie.asset(
-              'assets/animation/logo_animation.json',
-              width: 150,
-              height: 150,
-            ),
-          ),
-          Column(
-            children: [
-              const SizedBox(height: 280),
-              Text('Добро пожаловать!',
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple,
-                  ))
-                ..animate().fadeIn(delay: 500.ms),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Card(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  elevation: 12,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TabBar(
-                        controller: _tabController,
-                        indicator: BoxDecoration(
-                          color: const Color(0xFF2E7D32),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        labelColor: Colors.white,
-                        unselectedLabelColor: const Color(0xFF2E7D32),
-                        tabs: const [
-                          Tab(text: 'Регистрация'),
-                          Tab(text: 'Вход'),
+
+          // Контент
+          SafeArea(
+            child: Center(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Логотип
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 20,
+                            offset: Offset(0, 10),
+                          ),
                         ],
                       ),
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.5,
-                        child: TabBarView(
-                          controller: _tabController,
-                          children: [_buildRegister(), _buildLogin()],
+                      child: Icon(
+                        Icons.local_hospital,
+                        size: 70,
+                        color: Color(0xFF3498DB),
+                      ),
+                    )
+                        .animate()
+                        .scale(delay: 100.ms, duration: 600.ms)
+                        .fadeIn(delay: 100.ms),
+
+                    SizedBox(height: 32),
+
+                    // Название
+                    Text(
+                      'Qamqor Clinic',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(delay: 300.ms)
+                        .slideY(begin: -0.2, end: 0),
+
+                    SizedBox(height: 12),
+
+                    Text(
+                      'Добро пожаловать!',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 18,
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(delay: 400.ms)
+                        .slideY(begin: -0.2, end: 0),
+
+                    SizedBox(height: 48),
+
+                    // Карточка с формой
+                    Card(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      elevation: 12,
+                      child: Container(
+                        padding: EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            TabBar(
+                              controller: _tabController,
+                              indicator: BoxDecoration(
+                                color: Color(0xFF3498DB),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              labelColor: Colors.white,
+                              unselectedLabelColor: Color(0xFF3498DB),
+                              labelStyle: GoogleFonts.poppins(
+                                fontWeight: FontWeight.bold,
+                              ),
+                              tabs: const [
+                                Tab(text: 'Вход'),
+                                Tab(text: 'Регистрация'),
+                              ],
+                            ),
+                            SizedBox(height: 24),
+                            SizedBox(
+                              height: 300,
+                              child: TabBarView(
+                                controller: _tabController,
+                                children: [
+                                  _buildLoginTab(),
+                                  _buildRegisterTab(),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    )
+                        .animate()
+                        .fadeIn(delay: 500.ms)
+                        .slideY(begin: 0.2, end: 0),
+
+                    SizedBox(height: 24),
+
+                    // Кнопка быстрого входа (заглушка)
+                    TextButton(
+                      onPressed: _autoLogin,
+                      child: Text(
+                        'Быстрый вход (демо)',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 14,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    )
+                        .animate()
+                        .fadeIn(delay: 600.ms),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
+
+          // Индикатор загрузки
           if (_loading)
             Container(
               color: Colors.black54,
-              child: const Center(
+              child: Center(
                 child: CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation(Colors.white),
                 ),
@@ -370,6 +205,76 @@ class _AuthScreenState extends State<AuthScreen>
             ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLoginTab() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Для демо-режима используйте кнопку "Быстрый вход"',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: Colors.grey[600],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: _autoLogin,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFF3498DB),
+            padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Text(
+            'Войти',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRegisterTab() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          'Регистрация временно недоступна. Используйте быстрый вход для демо.',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: Colors.grey[600],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        SizedBox(height: 24),
+        ElevatedButton(
+          onPressed: _autoLogin,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFF3498DB),
+            padding: EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: Text(
+            'Быстрый вход',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

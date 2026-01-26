@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/auth_provider.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -48,11 +49,11 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _handleAutoLogin() async {
+    // Заглушка - автоматический вход
     final auth = context.read<AuthProvider>();
+    await auth.mockLogin();
     
-    // Всегда успешно для mock - просто переходим на главный экран
-    await Future.delayed(const Duration(milliseconds: 500));
-    // Всегда переходим на главный экран (MainHomeScreen)
+    // Переходим на главный экран
     Navigator.pushReplacementNamed(context, '/main');
   }
 
@@ -66,46 +67,88 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF6A0DAD),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ScaleTransition(
-              scale: _logoAnimation,
-              child: const Icon(
-                Icons.local_hospital_rounded,
-                size: 100,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 24),
-            FadeTransition(
-              opacity: _textAnimation,
-              child: const Text(
-                'Qamqor Clinic',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.5,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF2C3E50),
+              Color(0xFF34495E),
+              Color(0xFF3498DB),
+            ],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ScaleTransition(
+                scale: _logoAnimation,
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 20,
+                        offset: Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.local_hospital,
+                    size: 70,
+                    color: Color(0xFF3498DB),
+                  ),
                 ),
               ),
-            ),
-
-            // Если мы перешли в фазу loading — показываем спиннер
-            if (_phase == _Phase.loading) ...[
               const SizedBox(height: 32),
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              FadeTransition(
+                opacity: _textAnimation,
+                child: Column(
+                  children: [
+                    Text(
+                      'Qamqor Clinic',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 36,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Ваше здоровье - наш приоритет',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 12),
-              const Text(
-                'Loading…',
-                style: TextStyle(color: Colors.white),
-              ),
+
+              // Если мы перешли в фазу loading — показываем спиннер
+              if (_phase == _Phase.loading) ...[
+                const SizedBox(height: 48),
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Загрузка...',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
