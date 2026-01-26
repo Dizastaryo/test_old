@@ -1,13 +1,1 @@
 #include "Generated.xcconfig"
-OTHER_CFLAGS=$(inherited) -fstack-protector-strong
-OTHER_LDFLAGS=$(inherited) 
-// Переопределяем настройки кодовой подписи после включения Generated.xcconfig
-// Эти настройки должны переопределить любые настройки из Generated.xcconfig
-CODE_SIGN_IDENTITY=
-CODE_SIGN_STYLE=Manual
-DEVELOPMENT_TEAM=
-PROVISIONING_PROFILE_SPECIFIER=
-CODE_SIGN_IDENTITY[sdk=iphoneos*]=
-// Отключаем автоматическую подпись полностью
-CODE_SIGNING_REQUIRED=NO
-CODE_SIGNING_ALLOWED=NO

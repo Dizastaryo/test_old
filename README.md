@@ -1,4 +1,4 @@
-# aidyn_market
+# my_app
 
 A new Flutter project.
 

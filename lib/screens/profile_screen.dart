@@ -1,345 +1,298 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import '../providers/auth_provider.dart';
+import 'auth_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final currentUser = authProvider.currentUser;
+  const ProfileScreen({super.key});
 
-    final username = currentUser != null ? currentUser['username'] : 'Пользователь';
-    final email = currentUser != null ? currentUser['email'] : 'user@qamqor.kz';
-
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: CustomScrollView(
-        slivers: [
-          // App Bar с градиентом
-          SliverAppBar(
-            expandedHeight: 200,
-            floating: false,
-            pinned: true,
-            backgroundColor: Color(0xFF2C3E50),
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                'Профиль',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22,
-                ),
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Color(0xFF2C3E50),
-                      Color(0xFF34495E),
-                      Color(0xFF3498DB),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+  void _logout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Выход'),
+        content: const Text('Вы уверены, что хотите выйти?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Отмена'),
           ),
-
-          // Профиль пользователя
-          SliverToBoxAdapter(
-            child: Container(
-              margin: EdgeInsets.all(16),
-              padding: EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Color(0xFF3498DB), Color(0xFF2980B9)],
-                      ),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color(0xFF3498DB).withOpacity(0.3),
-                          blurRadius: 15,
-                          offset: Offset(0, 5),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        username.isNotEmpty ? username[0].toUpperCase() : 'U',
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  )
-                      .animate()
-                      .scale(delay: 100.ms, duration: 400.ms)
-                      .fadeIn(delay: 100.ms),
-                  SizedBox(height: 20),
-                  Text(
-                    username,
-                    style: GoogleFonts.poppins(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C3E50),
-                    ),
-                  )
-                      .animate()
-                      .fadeIn(delay: 200.ms)
-                      .slideY(begin: 0.2, end: 0),
-                  SizedBox(height: 8),
-                  Text(
-                    email,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                    ),
-                  )
-                      .animate()
-                      .fadeIn(delay: 300.ms)
-                      .slideY(begin: 0.2, end: 0),
-                ],
-              ),
-            ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const AuthScreen()),
+                (route) => false,
+              );
+            },
+            child: const Text('Выйти', style: TextStyle(color: Colors.red)),
           ),
-
-          // Мои записи
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: _buildMenuItem(
-                context,
-                'Мои записи',
-                Icons.calendar_today,
-                Color(0xFF3498DB),
-                () {
-                  // TODO: Навигация к записям
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Мои записи (в разработке)')),
-                  );
-                },
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 400.ms)
-                .slideX(begin: -0.2, end: 0),
-          ),
-
-          SliverToBoxAdapter(child: SizedBox(height: 12)),
-
-          // История посещений
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: _buildMenuItem(
-                context,
-                'История посещений',
-                Icons.history,
-                Color(0xFF9B59B6),
-                () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('История посещений (в разработке)')),
-                  );
-                },
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 500.ms)
-                .slideX(begin: -0.2, end: 0),
-          ),
-
-          SliverToBoxAdapter(child: SizedBox(height: 12)),
-
-          // Медицинские документы
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: _buildMenuItem(
-                context,
-                'Медицинские документы',
-                Icons.folder,
-                Color(0xFF27AE60),
-                () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Медицинские документы (в разработке)')),
-                  );
-                },
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 600.ms)
-                .slideX(begin: -0.2, end: 0),
-          ),
-
-          SliverToBoxAdapter(child: SizedBox(height: 12)),
-
-          // Настройки
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: _buildMenuItem(
-                context,
-                'Настройки',
-                Icons.settings,
-                Color(0xFFE67E22),
-                () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Настройки (в разработке)')),
-                  );
-                },
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 700.ms)
-                .slideX(begin: -0.2, end: 0),
-          ),
-
-          SliverToBoxAdapter(child: SizedBox(height: 12)),
-
-          // Политика конфиденциальности
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: _buildMenuItem(
-                context,
-                'Политика конфиденциальности',
-                Icons.privacy_tip_outlined,
-                Color(0xFF95A5A6),
-                () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Политика конфиденциальности (в разработке)')),
-                  );
-                },
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 800.ms)
-                .slideX(begin: -0.2, end: 0),
-          ),
-
-          SliverToBoxAdapter(child: SizedBox(height: 12)),
-
-          // Связаться с нами
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: _buildMenuItem(
-                context,
-                'Связаться с нами',
-                Icons.support_agent,
-                Color(0xFFE74C3C),
-                () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Связаться с нами (в разработке)')),
-                  );
-                },
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 900.ms)
-                .slideX(begin: -0.2, end: 0),
-          ),
-
-          SliverToBoxAdapter(child: SizedBox(height: 24)),
-
-          // Кнопка выхода
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  await authProvider.logout(context);
-                },
-                icon: Icon(Icons.logout, color: Colors.white),
-                label: Text(
-                  'Выйти из аккаунта',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFFE74C3C),
-                  padding: EdgeInsets.symmetric(vertical: 18),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 5,
-                ),
-              ),
-            )
-                .animate()
-                .fadeIn(delay: 1000.ms)
-                .slideY(begin: 0.2, end: 0),
-          ),
-
-          SliverToBoxAdapter(child: SizedBox(height: 20)),
         ],
       ),
     );
   }
 
-  Widget _buildMenuItem(
-    BuildContext context,
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: Offset(0, 5),
-          ),
-        ],
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Профиль'),
+        backgroundColor: Colors.blue.shade700,
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      child: ListTile(
-        leading: Container(
-          padding: EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color, size: 24),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Профиль пользователя
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue.shade700, Colors.blue.shade400],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Аватар
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                    ),
+                    child: const Icon(
+                      Icons.person,
+                      size: 50,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Пользователь',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'user@example.com',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Меню профиля
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  _ProfileMenuItem(
+                    icon: Icons.person_outline,
+                    title: 'Личные данные',
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Раздел в разработке')),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  _ProfileMenuItem(
+                    icon: Icons.history,
+                    title: 'История записей',
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Раздел в разработке')),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  _ProfileMenuItem(
+                    icon: Icons.notifications_outlined,
+                    title: 'Уведомления',
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Раздел в разработке')),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  _ProfileMenuItem(
+                    icon: Icons.settings_outlined,
+                    title: 'Настройки',
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Раздел в разработке')),
+                      );
+                    },
+                  ),
+                  const Divider(height: 1),
+                  _ProfileMenuItem(
+                    icon: Icons.help_outline,
+                    title: 'Помощь',
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Раздел в разработке')),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Контактная информация
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Контактная информация',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _ContactInfoItem(
+                    icon: Icons.phone,
+                    label: 'Телефон',
+                    value: '+7 (XXX) XXX-XX-XX',
+                  ),
+                  const SizedBox(height: 12),
+                  _ContactInfoItem(
+                    icon: Icons.email,
+                    label: 'Email',
+                    value: 'info@qamqorclinic.kz',
+                  ),
+                  const SizedBox(height: 12),
+                  _ContactInfoItem(
+                    icon: Icons.location_on,
+                    label: 'Адрес',
+                    value: 'г. Алматы, ул. Примерная, д. 1',
+                  ),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Кнопка выхода
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton(
+                  onPressed: () => _logout(context),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Выйти',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 32),
+          ],
         ),
-        title: Text(
-          title,
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-        trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-        onTap: onTap,
       ),
+    );
+  }
+}
+
+class _ProfileMenuItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  const _ProfileMenuItem({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.blue.shade700),
+      title: Text(title),
+      trailing: Icon(Icons.arrow_forward_ios, 
+          size: 16, 
+          color: Colors.grey.shade400),
+      onTap: onTap,
+    );
+  }
+}
+
+class _ContactInfoItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _ContactInfoItem({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.blue.shade700),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
