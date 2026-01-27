@@ -5,38 +5,50 @@ on:
 
 jobs:
   build-ios:
-    name: 🎉 iOS Build
+    name: 🎉 iOS Build (No Codesign)
     runs-on: macos-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - uses: subosito/flutter-action@v2
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          channel: stable
           architecture: x64
-      - run: flutter pub get
-      
 
-      - run: pod repo update
+      - name: Flutter doctor
+        run: flutter doctor -v
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Update CocoaPods
+        run: pod repo update
         working-directory: ios
 
-      - run: flutter build ios --release --no-codesign
+      # 🔑 ВАЖНО: сборка под simulator, НЕ требует Development Team
+      - name: Build iOS (simulator, no codesign)
+        run: flutter build ios --release --no-codesign --simulator
 
-      - run: mkdir Payload
-        working-directory: build/ios/iphoneos
+      - name: Create Payload directory
+        run: mkdir Payload
+        working-directory: build/ios/iphonesimulator
 
-      - run: mv Runner.app/ Payload
-        working-directory: build/ios/iphoneos
+      - name: Move app to Payload
+        run: mv Runner.app Payload/
+        working-directory: build/ios/iphonesimulator
 
-      - name: Zip output
+      - name: Zip IPA
         run: zip -qq -r -9 FlutterIpaExport.ipa Payload
-        working-directory: build/ios/iphoneos
+        working-directory: build/ios/iphonesimulator
 
-      - name: Upload binaries to release
+      - name: Upload IPA to GitHub Release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/ios/iphoneos/FlutterIpaExport.ipa
+          file: build/ios/iphonesimulator/FlutterIpaExport.ipa
           tag: v1.0
           overwrite: true
-          body: "This is first release"
+          body: "iOS simulator IPA build (no codesign)"
