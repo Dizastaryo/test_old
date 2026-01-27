@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'screens/auth_screen.dart';
+import 'package:provider/provider.dart';
+import 'providers/app_provider.dart';
+import 'themes/app_theme.dart';
+import 'screens/splash_screen.dart';
 
 void main() {
   runApp(const QamqorClinicApp());
@@ -10,22 +13,20 @@ class QamqorClinicApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Qamqor Clinic',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue.shade700,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.blue.shade700,
-          foregroundColor: Colors.white,
-          elevation: 0,
-        ),
+    return ChangeNotifierProvider(
+      create: (_) => AppProvider(),
+      child: Consumer<AppProvider>(
+        builder: (context, appProvider, child) {
+          return MaterialApp(
+            title: 'Qamqor Clinic',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.getLightTheme(),
+            darkTheme: AppTheme.getDarkTheme(),
+            themeMode: appProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            home: const SplashScreen(),
+          );
+        },
       ),
-      home: const AuthScreen(),
     );
   }
 }
