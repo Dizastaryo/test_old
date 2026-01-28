@@ -1,56 +1,49 @@
-name: iOS-ipa-build
+name: Build iOS IPA
 
 on:
   workflow_dispatch:
 
 jobs:
-  build-ios:
-    name: 🎉 iOS Unsigned IPA Build
+  build:
+    name: 🎉 iOS Build (No Codesign)
     runs-on: macos-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: 'stable'
           channel: stable
-          architecture: x64
 
       - name: Flutter doctor
         run: flutter doctor -v
 
-      - name: Get Flutter dependencies
+      - name: Get dependencies
         run: flutter pub get
 
-      - name: Update CocoaPods repo
+      - name: Update CocoaPods
         run: pod repo update
         working-directory: ios
 
-      # 🔑 ВАЖНО: release нельзя для simulator → используем profile
-      - name: Build iOS (unsigned, simulator, profile)
-        run: flutter build ios --profile --no-codesign --simulator
+      # 🔑 ВАЖНО: сборка для реального устройства (iphoneos), НЕ требует Development Team
+      # Используем --release --no-codesign для создания настоящего .ipa файла
+      - name: Build iOS (release, no codesign)
+        run: flutter build ios --release --no-codesign
 
-      # 📦 Упаковка Runner.app в IPA
       - name: Create Payload directory
-        run: mkdir Payload
-        working-directory: build/ios/iphonesimulator
+        run: mkdir -p Payload
 
-      - name: Move Runner.app to Payload
-        run: mv Runner.app Payload/
-        working-directory: build/ios/iphonesimulator
+      - name: Copy app to Payload
+        run: cp -R build/ios/iphoneos/Runner.app Payload/
 
-      - name: Zip unsigned IPA
-        run: zip -qq -r -9 FlutterIpaExport.ipa Payload
-        working-directory: build/ios/iphonesimulator
+      - name: Create IPA archive
+        run: zip -r app.ipa Payload
 
-      # 🚀 Загрузка IPA в GitHub Release
-      - name: Upload unsigned IPA to GitHub Release
-        uses: svenstaro/upload-release-action@v2
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/ios/iphonesimulator/FlutterIpaExport.ipa
-          tag: v1.0
-          overwrite: true
-          body: "Unsigned iOS IPA (simulator build, profile mode, no codesign)"
+          name: ios-ipa
+          path: app.ipa
