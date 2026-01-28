@@ -28,19 +28,13 @@ jobs:
           pod install
         working-directory: ios
 
-      # 1) Подготовка iOS проекта (без сборки)
-      # На некоторых связках Flutter/Xcode `flutter build ios --no-codesign` всё равно требует Team ID.
-      # Поэтому финальную сборку делаем через xcodebuild с явными overrides.
-      - name: Flutter config-only (no build)
-        run: flutter build ios --release --config-only
-
-      # 2) Диагностика реальных build settings (помогает понять, кто включает подпись)
+      # Диагностика реальных build settings (помогает понять, кто включает подпись)
       - name: Show signing build settings (Release)
         run: |
           xcodebuild -showBuildSettings -workspace Runner.xcworkspace -scheme Runner -configuration Release | grep -E 'CODE_SIGN|DEVELOPMENT_TEAM|PROVISION' || true
         working-directory: ios
 
-      # 3) Архивирование через xcodebuild без подписи (гарантированный способ получить Runner.app)
+      # Архивирование через xcodebuild без подписи (гарантированный способ получить Runner.app)
       - name: Xcode archive (unsigned)
         run: |
           xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release \
