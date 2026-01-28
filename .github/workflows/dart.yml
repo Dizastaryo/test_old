@@ -5,9 +5,8 @@ on:
 
 jobs:
   build:
-    name: 🎉 iOS Build (No Codesign)
+    name: 📱 iOS Build (No Codesign)
     runs-on: macos-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,8 +26,9 @@ jobs:
         run: pod repo update
         working-directory: ios
 
-      # 🔑 ВАЖНО: сборка для реального устройства (iphoneos), НЕ требует Development Team
-      # Используем --release --no-codesign для создания настоящего .ipa файла
+      # 🔑 ВАЖНО: для сборки на реальное устройство без Team ID 
+      # отключена подпись кода (см. настройки Podfile).
+      # Используется --release --no-codesign для генерации неоподписанного .ipa
       - name: Build iOS (release, no codesign)
         run: flutter build ios --release --no-codesign
 
