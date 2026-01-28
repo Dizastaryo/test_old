@@ -22,12 +22,14 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Update CocoaPods
-        run: pod repo update
+      - name: Install CocoaPods dependencies
+        run: |
+          pod repo update
+          pod install
         working-directory: ios
 
       # 🔑 ВАЖНО: для сборки на реальное устройство без Team ID 
-      # отключена подпись кода (см. настройки Podfile).
+      # отключена подпись кода в Podfile (CODE_SIGNING_REQUIRED = NO).
       # Используется --release --no-codesign для генерации неоподписанного .ipa
       - name: Build iOS (release, no codesign)
         run: flutter build ios --release --no-codesign
