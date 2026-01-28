@@ -28,17 +28,33 @@ jobs:
           pod install
         working-directory: ios
 
-      # 🔑 ВАЖНО: для сборки на реальное устройство без Team ID 
-      # отключена подпись кода в Podfile (CODE_SIGNING_REQUIRED = NO).
-      # Используется --release --no-codesign для генерации неоподписанного .ipa
-      - name: Build iOS (release, no codesign)
-        run: flutter build ios --release --no-codesign
+      # 1) Подготовка iOS проекта (без сборки)
+      # На некоторых связках Flutter/Xcode `flutter build ios --no-codesign` всё равно требует Team ID.
+      # Поэтому финальную сборку делаем через xcodebuild с явными overrides.
+      - name: Flutter config-only (no build)
+        run: flutter build ios --release --config-only
+
+      # 2) Диагностика реальных build settings (помогает понять, кто включает подпись)
+      - name: Show signing build settings (Release)
+        run: |
+          xcodebuild -showBuildSettings -workspace Runner.xcworkspace -scheme Runner -configuration Release | grep -E 'CODE_SIGN|DEVELOPMENT_TEAM|PROVISION' || true
+        working-directory: ios
+
+      # 3) Архивирование через xcodebuild без подписи (гарантированный способ получить Runner.app)
+      - name: Xcode archive (unsigned)
+        run: |
+          xcodebuild -workspace Runner.xcworkspace -scheme Runner -configuration Release \
+            -archivePath ../build/Runner.xcarchive -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER="" \
+            archive
+        working-directory: ios
 
       - name: Create Payload directory
         run: mkdir -p Payload
 
       - name: Copy app to Payload
-        run: cp -R build/ios/iphoneos/Runner.app Payload/
+        run: cp -R build/Runner.xcarchive/Products/Applications/Runner.app Payload/
 
       - name: Create IPA archive
         run: zip -r app.ipa Payload
