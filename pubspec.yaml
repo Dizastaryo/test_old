@@ -32,7 +32,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^6.0.0
+  # Совместимо с Dart 3.3.0+
+  flutter_lints: ^3.0.1
 
 flutter:
   uses-material-design: true
