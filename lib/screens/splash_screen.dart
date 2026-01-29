@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/app_provider.dart';
+import '../theme/app_tokens.dart';
 import 'auth_screen.dart';
 import 'main_screen.dart';
-import '../providers/app_provider.dart';
-import 'package:provider/provider.dart';
+import 'onboarding_screen.dart';
 
+/// Splash: Hero gradient, лого, лёгкий fade. Маршрут: onboarding → auth/main.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -11,97 +14,123 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _opacity;
+
+  static const _heroGradient = [
+    Color(0xFF1D4ED8),
+    Color(0xFF60A5FA),
+  ];
+
   @override
   void initState() {
     super.initState();
-    _navigateToNext();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _opacity = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+    _controller.forward();
+    _navigate();
   }
 
-  Future<void> _navigateToNext() async {
-    await Future.delayed(const Duration(seconds: 2));
-    
+  Future<void> _navigate() async {
+    await Future.delayed(const Duration(milliseconds: 2200));
     if (!mounted) return;
-    
     final appProvider = Provider.of<AppProvider>(context, listen: false);
-    
+    if (!appProvider.onboardingCompleted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+      );
+      return;
+    }
     if (appProvider.isLoggedIn) {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const MainScreen()),
+        MaterialPageRoute(builder: (_) => const MainScreen()),
       );
     } else {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const AuthScreen()),
+        MaterialPageRoute(builder: (_) => const AuthScreen()),
       );
     }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Colors.blue.shade700,
-              Colors.blue.shade400,
-            ],
+            colors: _heroGradient,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
         ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Логотип
-              Container(
-                width: 150,
-                height: 150,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                  ],
+        child: FadeTransition(
+          opacity: _opacity,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 150,
+                  height: 150,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 20,
+                        spreadRadius: 4,
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.local_hospital_rounded,
+                    size: 80,
+                    color: AppTokens.primary,
+                  ),
                 ),
-                child: const Icon(
-                  Icons.local_hospital,
-                  size: 80,
-                  color: Colors.blue,
+                const SizedBox(height: AppTokens.xxl),
+                const Text(
+                  'Qamqor Clinic',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    letterSpacing: 1.2,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 32),
-              
-              // Название
-              const Text(
-                'Qamqor Clinic',
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 1.2,
+                const SizedBox(height: AppTokens.sm),
+                Text(
+                  'Частная клиника',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Частная клиника',
-                style: TextStyle(
-                  fontSize: 18,
-                  color: Colors.white70,
+                const SizedBox(height: AppTokens.xxl),
+                const SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 48),
-              
-              // Индикатор загрузки
-              const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

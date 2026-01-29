@@ -11,10 +11,12 @@ class AppProvider with ChangeNotifier {
   bool _isLoggedIn = false;
   bool _isDarkMode = false;
   String _language = 'ru';
+  bool _onboardingCompleted = false;
   List<AppNotification> _notifications = [];
 
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _isLoggedIn;
+  bool get onboardingCompleted => _onboardingCompleted;
   bool get isDarkMode => _isDarkMode;
   String get language => _language;
   List<AppNotification> get notifications => _notifications;
@@ -31,6 +33,7 @@ class AppProvider with ChangeNotifier {
     _isLoggedIn = prefs.getBool(AppConstants.keyIsLoggedIn) ?? false;
     _isDarkMode = prefs.getBool(AppConstants.keyTheme) ?? false;
     _language = prefs.getString(AppConstants.keyLanguage) ?? 'ru';
+    _onboardingCompleted = prefs.getBool(AppConstants.keyOnboardingCompleted) ?? false;
 
     if (_isLoggedIn) {
       final userJson = prefs.getString(AppConstants.keyUser);
@@ -133,6 +136,13 @@ class AppProvider with ChangeNotifier {
 
   void markAllNotificationsAsRead() {
     _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
+    notifyListeners();
+  }
+
+  Future<void> completeOnboarding() async {
+    _onboardingCompleted = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppConstants.keyOnboardingCompleted, true);
     notifyListeners();
   }
 }

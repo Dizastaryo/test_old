@@ -4,6 +4,8 @@ import '../providers/app_provider.dart';
 import '../services/mock_data.dart';
 import '../models/doctor.dart';
 import '../models/appointment.dart';
+import '../theme/app_tokens.dart';
+import '../widgets/app_buttons.dart';
 import 'doctors_screen.dart';
 import 'package:intl/intl.dart';
 
@@ -123,19 +125,22 @@ class _AppointmentScreenState extends State<AppointmentScreen>
     );
   }
 
+  int get _currentStep {
+    if (_selectedService == null) return 1;
+    if (_selectedDoctor == null) return 2;
+    if (_selectedDate == null) return 3;
+    if (_selectedTime == null) return 4;
+    return 5;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Запись на приём'),
-        backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
           tabs: const [
             Tab(text: 'Новая запись'),
             Tab(text: 'Мои записи'),
@@ -153,57 +158,54 @@ class _AppointmentScreenState extends State<AppointmentScreen>
   }
 
   Widget _buildNewAppointmentTab() {
+    final theme = Theme.of(context);
+    final step = _currentStep;
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppTokens.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Информационная карточка
+          _StepIndicator(currentStep: step, totalSteps: 5),
+          const SizedBox(height: AppTokens.xl),
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppTokens.lg),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade200),
+              color: theme.colorScheme.primaryContainer.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
             ),
             child: Row(
               children: [
-                Icon(Icons.info_outline, color: Colors.blue.shade700),
-                const SizedBox(width: 12),
+                Icon(Icons.info_outline_rounded, color: theme.colorScheme.primary),
+                const SizedBox(width: AppTokens.md),
                 Expanded(
                   child: Text(
                     'Выберите удобную дату и время для записи',
-                    style: TextStyle(
-                      color: Colors.blue.shade900,
-                      fontSize: 14,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurface,
                     ),
                   ),
                 ),
               ],
             ),
           ),
-
-          const SizedBox(height: 24),
-
-          // Выбор врача
-          const Text(
+          const SizedBox(height: AppTokens.xl),
+          Text(
             'Врач',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppTokens.md),
           InkWell(
             onTap: () async {
               final doctor = await Navigator.push<Doctor>(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const DoctorsScreen(),
+                  settings: const RouteSettings(arguments: 'select_doctor'),
                 ),
               );
-              if (doctor != null) {
+              if (doctor != null && mounted) {
                 setState(() {
                   _selectedDoctor = doctor;
                 });
@@ -211,33 +213,32 @@ class _AppointmentScreenState extends State<AppointmentScreen>
             },
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppTokens.lg),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppTokens.radiusInput),
                 border: Border.all(
                   color: _selectedDoctor != null
-                      ? Colors.blue.shade700
-                      : Colors.grey.shade300,
+                      ? theme.colorScheme.primary
+                      : theme.colorScheme.outline,
                 ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.person, color: Colors.blue.shade700),
-                  const SizedBox(width: 12),
+                  Icon(Icons.person_rounded, color: theme.colorScheme.primary),
+                  const SizedBox(width: AppTokens.md),
                   Expanded(
                     child: Text(
                       _selectedDoctor?.name ?? 'Выберите врача',
-                      style: TextStyle(
-                        fontSize: 16,
+                      style: theme.textTheme.bodyLarge?.copyWith(
                         color: _selectedDoctor != null
-                            ? Colors.black
-                            : Colors.grey,
+                            ? theme.colorScheme.onSurface
+                            : theme.colorScheme.outline,
                       ),
                     ),
                   ),
-                  Icon(Icons.arrow_forward_ios,
-                      size: 16, color: Colors.grey.shade400),
+                  Icon(Icons.arrow_forward_ios_rounded,
+                      size: 16, color: theme.colorScheme.outline),
                 ],
               ),
             ),
@@ -246,118 +247,101 @@ class _AppointmentScreenState extends State<AppointmentScreen>
           if (_selectedDoctor != null) ...[
             const SizedBox(height: 8),
             Padding(
-              padding: const EdgeInsets.only(left: 16),
+              padding: const EdgeInsets.only(left: AppTokens.lg),
               child: Text(
                 _selectedDoctor!.specialization,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
           ],
-
-          const SizedBox(height: 24),
-
-          // Выбор даты
-          const Text(
+          const SizedBox(height: AppTokens.xl),
+          Text(
             'Дата',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppTokens.md),
           InkWell(
             onTap: () => _selectDate(context),
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppTokens.lg),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppTokens.radiusInput),
+                border: Border.all(color: theme.colorScheme.outline),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.calendar_today, color: Colors.blue.shade700),
-                  const SizedBox(width: 12),
+                  Icon(Icons.calendar_month_rounded, color: theme.colorScheme.primary),
+                  const SizedBox(width: AppTokens.md),
                   Text(
                     _selectedDate == null
                         ? 'Выберите дату'
                         : DateFormat('dd.MM.yyyy').format(_selectedDate!),
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _selectedDate == null ? Colors.grey : Colors.black,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: _selectedDate == null
+                          ? theme.colorScheme.outline
+                          : theme.colorScheme.onSurface,
                     ),
                   ),
                   const Spacer(),
-                  Icon(Icons.arrow_forward_ios,
-                      size: 16, color: Colors.grey.shade400),
+                  Icon(Icons.arrow_forward_ios_rounded,
+                      size: 16, color: theme.colorScheme.outline),
                 ],
               ),
             ),
           ),
-
-          const SizedBox(height: 24),
-
-          // Выбор времени
-          const Text(
+          const SizedBox(height: AppTokens.xl),
+          Text(
             'Время',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppTokens.md),
           InkWell(
             onTap: () => _selectTime(context),
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppTokens.lg),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(AppTokens.radiusInput),
+                border: Border.all(color: theme.colorScheme.outline),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.access_time, color: Colors.blue.shade700),
-                  const SizedBox(width: 12),
+                  Icon(Icons.schedule_rounded, color: theme.colorScheme.primary),
+                  const SizedBox(width: AppTokens.md),
                   Text(
                     _selectedTime == null
                         ? 'Выберите время'
                         : _selectedTime!.format(context),
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _selectedTime == null ? Colors.grey : Colors.black,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: _selectedTime == null
+                          ? theme.colorScheme.outline
+                          : theme.colorScheme.onSurface,
                     ),
                   ),
                   const Spacer(),
-                  Icon(Icons.arrow_forward_ios,
-                      size: 16, color: Colors.grey.shade400),
+                  Icon(Icons.arrow_forward_ios_rounded,
+                      size: 16, color: theme.colorScheme.outline),
                 ],
               ),
             ),
           ),
-
-          const SizedBox(height: 24),
-
-          // Выбор услуги
-          const Text(
+          const SizedBox(height: AppTokens.xl),
+          Text(
             'Услуга',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppTokens.md),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppTokens.radiusInput),
+              border: Border.all(color: theme.colorScheme.outline),
             ),
             child: DropdownButton<String>(
               value: _selectedService,
@@ -377,30 +361,10 @@ class _AppointmentScreenState extends State<AppointmentScreen>
               },
             ),
           ),
-
-          const SizedBox(height: 32),
-
-          // Кнопка подтверждения
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: _submitAppointment,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue.shade700,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Записаться',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+          const SizedBox(height: AppTokens.xxl),
+          AppPrimaryButton(
+            label: 'Записаться',
+            onPressed: _submitAppointment,
           ),
         ],
       ),
@@ -419,12 +383,68 @@ class _AppointmentScreenState extends State<AppointmentScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppTokens.lg),
       itemCount: appointments.length,
       itemBuilder: (context, index) {
         final appointment = appointments[index];
         return _AppointmentCard(appointment: appointment);
       },
+    );
+  }
+}
+
+class _StepIndicator extends StatelessWidget {
+  final int currentStep;
+  final int totalSteps;
+
+  const _StepIndicator({
+    required this.currentStep,
+    required this.totalSteps,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: List.generate(totalSteps * 2 - 1, (i) {
+        if (i.isOdd) {
+          return Expanded(
+            child: Container(
+              height: 2,
+              margin: const EdgeInsets.symmetric(horizontal: 2),
+              color: (i ~/ 2) + 1 < currentStep
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.outline.withOpacity(0.3),
+            ),
+          );
+        }
+        final step = (i ~/ 2) + 1;
+        final isActive = step <= currentStep;
+        return Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isActive
+                ? theme.colorScheme.primary
+                : theme.colorScheme.surfaceContainerHighest,
+            border: Border.all(
+              color: isActive ? theme.colorScheme.primary : theme.colorScheme.outline,
+              width: 1.5,
+            ),
+          ),
+          child: Center(
+            child: isActive
+                ? Icon(Icons.check_rounded, size: 16, color: theme.colorScheme.onPrimary)
+                : Text(
+                    '$step',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+          ),
+        );
+      }),
     );
   }
 }
@@ -436,26 +456,27 @@ class _AppointmentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final dateFormat = DateFormat('dd.MM.yyyy HH:mm');
     final statusColors = {
-      'scheduled': Colors.blue,
-      'completed': Colors.green,
-      'cancelled': Colors.red,
+      'scheduled': theme.colorScheme.primary,
+      'completed': AppTokens.success,
+      'cancelled': AppTokens.error,
     };
     final statusNames = {
-      'scheduled': 'Запланировано',
+      'scheduled': 'Подтверждена',
       'completed': 'Завершено',
-      'cancelled': 'Отменено',
+      'cancelled': 'Отменена',
     };
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
+      margin: const EdgeInsets.only(bottom: AppTokens.md),
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTokens.radiusCard),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppTokens.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -468,17 +489,15 @@ class _AppointmentCard extends StatelessWidget {
                     children: [
                       Text(
                         appointment.doctorName,
-                        style: const TextStyle(
-                          fontSize: 18,
+                        style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppTokens.xs),
                       Text(
                         appointment.doctorSpecialization,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -486,45 +505,43 @@ class _AppointmentCard extends StatelessWidget {
                 ),
                 Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+                    horizontal: AppTokens.md,
+                    vertical: AppTokens.sm,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColors[appointment.status]?.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    color: (statusColors[appointment.status] ?? theme.colorScheme.outline)
+                        .withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(AppTokens.radiusChip),
                   ),
                   child: Text(
                     statusNames[appointment.status] ?? appointment.status,
-                    style: TextStyle(
+                    style: theme.textTheme.labelSmall?.copyWith(
                       color: statusColors[appointment.status],
-                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppTokens.md),
             Row(
               children: [
-                Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                const SizedBox(width: 8),
+                Icon(Icons.event_note_rounded, size: 18, color: theme.colorScheme.outline),
+                const SizedBox(width: AppTokens.sm),
                 Text(
                   dateFormat.format(appointment.dateTime),
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade700,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
             if (appointment.notes != null) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppTokens.sm),
               Text(
                 'Примечание: ${appointment.notes}',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

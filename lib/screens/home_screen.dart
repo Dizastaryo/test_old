@@ -3,10 +3,16 @@ import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../services/mock_data.dart';
 import '../models/promotion.dart';
+import '../models/appointment.dart';
+import '../models/doctor.dart';
+import '../theme/app_tokens.dart';
+import '../widgets/hero_header.dart';
+import '../widgets/app_cards.dart';
 import 'appointment_screen.dart';
 import 'medical_history_screen.dart';
 import 'doctors_screen.dart';
 import 'contact_screen.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -15,223 +21,205 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final appProvider = Provider.of<AppProvider>(context);
     final user = appProvider.currentUser;
+    final userId = user?.id ?? 'user_1';
+    final appointments = MockData.getAppointments(userId);
+    final nextAppointment = appointments
+        .where((a) => a.status == 'scheduled' && a.dateTime.isAfter(DateTime.now()))
+        .isEmpty
+        ? null
+        : appointments
+            .where((a) => a.status == 'scheduled' && a.dateTime.isAfter(DateTime.now()))
+            .reduce((a, b) => a.dateTime.isBefore(b.dateTime) ? a : b);
     final promotions = MockData.getPromotions().where((p) => p.isActive).toList();
+    final theme = Theme.of(context);
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // AppBar с приветствием
-          SliverAppBar(
+          HeroHeader(
             expandedHeight: 120,
-            floating: false,
-            pinned: true,
-            backgroundColor: Colors.blue.shade700,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                user != null ? 'Добро пожаловать, ${user.name.split(' ').first}!' : 'Qamqor Clinic',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue.shade700, Colors.blue.shade400],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-              ),
-            ),
+            title: user != null
+                ? 'Добро пожаловать, ${user.name.split(' ').first}!'
+                : 'Qamqor Clinic',
           ),
-
           SliverToBoxAdapter(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Слайдер с акциями
+                // Next Appointment Card
+                if (nextAppointment != null) ...[
+                  const SizedBox(height: AppTokens.lg),
+                  _NextAppointmentCard(appointment: nextAppointment),
+                  const SizedBox(height: AppTokens.xl),
+                ],
+
+                // Promo carousel
                 if (promotions.isNotEmpty) ...[
-                  const SizedBox(height: 16),
+                  const SizedBox(height: AppTokens.lg),
                   SizedBox(
                     height: 200,
                     child: PageView.builder(
                       itemCount: promotions.length,
                       itemBuilder: (context, index) {
-                        final promotion = promotions[index];
-                        return _PromotionCard(promotion: promotion);
+                        final p = promotions[index];
+                        return AppPromoCard(
+                          title: p.title,
+                          description: p.description,
+                          discountPercent: p.discount?.toInt(),
+                        );
                       },
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppTokens.xl),
                 ],
 
-                // Быстрые действия
+                // Quick Actions 2×2
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Быстрые действия',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppTokens.lg),
                       GridView.count(
                         crossAxisCount: 2,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
+                        crossAxisSpacing: AppTokens.md,
+                        mainAxisSpacing: AppTokens.md,
                         childAspectRatio: 1.2,
                         children: [
-                          _QuickActionCard(
-                            icon: Icons.calendar_today,
+                          AppActionCard(
+                            icon: Icons.add_circle_rounded,
                             title: 'Запись на приём',
-                            color: Colors.blue,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const AppointmentScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          _QuickActionCard(
-                            icon: Icons.history,
-                            title: 'История посещений',
-                            color: Colors.green,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const MedicalHistoryScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                          _QuickActionCard(
-                            icon: Icons.science,
-                            title: 'Анализы',
-                            color: Colors.orange,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const MedicalHistoryScreen(initialTab: 1),
-                                ),
-                              );
-                            },
-                          ),
-                          _QuickActionCard(
-                            icon: Icons.contact_phone,
-                            title: 'Контакты',
-                            color: Colors.purple,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const ContactScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Врачи (краткий список)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Наши врачи',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                            color: AppTokens.primary,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AppointmentScreen(),
+                              ),
                             ),
                           ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const DoctorsScreen(),
-                                ),
-                              );
-                            },
-                            child: const Text('Все врачи'),
+                          AppActionCard(
+                            icon: Icons.groups_rounded,
+                            title: 'Врачи',
+                            color: AppTokens.secondary,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const DoctorsScreen(),
+                              ),
+                            ),
+                          ),
+                          AppActionCard(
+                            icon: Icons.science_rounded,
+                            title: 'Анализы',
+                            color: AppTokens.info,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const MedicalHistoryScreen(initialTab: 1),
+                              ),
+                            ),
+                          ),
+                          AppActionCard(
+                            icon: Icons.call_rounded,
+                            title: 'Контакты',
+                            color: AppTokens.warning,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ContactScreen(),
+                              ),
+                            ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 120,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: MockData.getDoctors().take(4).length,
-                          itemBuilder: (context, index) {
-                            final doctor = MockData.getDoctors()[index];
-                            return _DoctorCard(doctor: doctor);
-                          },
-                        ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: AppTokens.xl),
 
-                const SizedBox(height: 24),
+                // Рекомендуемые врачи
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Рекомендуемые врачи',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DoctorsScreen(),
+                          ),
+                        ),
+                        child: const Text('Все врачи'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppTokens.md),
+                SizedBox(
+                  height: 128,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
+                    itemCount: MockData.getDoctors().take(4).length,
+                    itemBuilder: (context, index) {
+                      final doctor = MockData.getDoctors()[index];
+                      return _DoctorMiniCard(doctor: doctor);
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppTokens.xl),
 
                 // Услуги
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
+                  child: Text(
+                    'Наши услуги',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppTokens.lg),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Наши услуги',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _ServiceCard(
-                        icon: Icons.medical_services,
+                      _ServiceTile(
+                        icon: Icons.medical_services_rounded,
                         title: 'Консультация врача',
-                        description: 'Профессиональная консультация специалистов',
+                        subtitle: 'Профессиональная консультация специалистов',
                       ),
-                      const SizedBox(height: 12),
-                      _ServiceCard(
-                        icon: Icons.health_and_safety,
+                      const SizedBox(height: AppTokens.md),
+                      _ServiceTile(
+                        icon: Icons.health_and_safety_rounded,
                         title: 'Диагностика',
-                        description: 'Современное оборудование для точной диагностики',
+                        subtitle: 'Современное оборудование для точной диагностики',
                       ),
-                      const SizedBox(height: 12),
-                      _ServiceCard(
-                        icon: Icons.local_pharmacy,
+                      const SizedBox(height: AppTokens.md),
+                      _ServiceTile(
+                        icon: Icons.local_pharmacy_rounded,
                         title: 'Лечение',
-                        description: 'Эффективные методы лечения и реабилитации',
+                        subtitle: 'Эффективные методы лечения и реабилитации',
                       ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 24),
+                const SizedBox(height: AppTokens.xxl),
               ],
             ),
           ),
@@ -241,146 +229,97 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _PromotionCard extends StatelessWidget {
-  final Promotion promotion;
+class _NextAppointmentCard extends StatelessWidget {
+  final Appointment appointment;
 
-  const _PromotionCard({required this.promotion});
+  const _NextAppointmentCard({required this.appointment});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade600, Colors.blue.shade400],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+        child: InkWell(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const AppointmentScreen(),
+            ),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (promotion.discount != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  'Скидка ${promotion.discount!.toInt()}%',
-                  style: TextStyle(
-                    color: Colors.blue.shade700,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+          borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+          child: Padding(
+            padding: const EdgeInsets.all(AppTokens.lg),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(AppTokens.md),
+                  decoration: BoxDecoration(
+                    color: AppTokens.primaryContainer,
+                    borderRadius:
+                        BorderRadius.circular(AppTokens.radiusInput),
+                  ),
+                  child: const Icon(
+                    Icons.event_rounded,
+                    color: AppTokens.primary,
+                    size: 28,
                   ),
                 ),
-              ),
-            const SizedBox(height: 12),
-            Text(
-              promotion.title,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
+                const SizedBox(width: AppTokens.lg),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Следующая запись',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: AppTokens.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: AppTokens.xs),
+                      Text(
+                        appointment.doctorName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        DateFormat('dd MMM, HH:mm').format(appointment.dateTime),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: AppTokens.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              promotion.description,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white.withOpacity(0.9),
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _QuickActionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final Color color;
-  final VoidCallback onTap;
+class _DoctorMiniCard extends StatelessWidget {
+  final Doctor doctor;
 
-  const _QuickActionCard({
-    required this.icon,
-    required this.title,
-    required this.color,
-    required this.onTap,
-  });
+  const _DoctorMiniCard({required this.doctor});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 40, color: color),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DoctorCard extends StatelessWidget {
-  final doctor;
-
-  const _DoctorCard({required this.doctor});
-
-  @override
-  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       width: 200,
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(right: AppTokens.md),
+      padding: const EdgeInsets.all(AppTokens.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+        border: Border.all(color: AppTokens.outline.withOpacity(0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,33 +327,35 @@ class _DoctorCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                width: 50,
-                height: 50,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
+                  color: AppTokens.primaryContainer,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.person, color: Colors.blue),
+                child: const Icon(
+                  Icons.person_rounded,
+                  color: AppTokens.primary,
+                  size: 24,
+                ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppTokens.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       doctor.name.split(' ').take(2).join(' '),
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       doctor.specialization,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppTokens.textSecondary,
                       ),
                     ),
                   ],
@@ -422,14 +363,14 @@ class _DoctorCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppTokens.sm),
           Row(
             children: [
-              Icon(Icons.star, size: 16, color: Colors.amber),
+              Icon(Icons.star_rounded, size: 16, color: AppTokens.warning),
               const SizedBox(width: 4),
               Text(
                 doctor.rating.toStringAsFixed(1),
-                style: const TextStyle(fontSize: 12),
+                style: theme.textTheme.labelMedium,
               ),
             ],
           ),
@@ -439,61 +380,54 @@ class _DoctorCard extends StatelessWidget {
   }
 }
 
-class _ServiceCard extends StatelessWidget {
+class _ServiceTile extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String description;
+  final String subtitle;
 
-  const _ServiceCard({
+  const _ServiceTile({
     required this.icon,
     required this.title,
-    required this.description,
+    required this.subtitle,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppTokens.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+        border: Border.all(color: AppTokens.outline.withOpacity(0.5)),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(AppTokens.md),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(10),
+              color: AppTokens.primaryContainer,
+              borderRadius:
+                  BorderRadius.circular(AppTokens.radiusInput),
             ),
-            child: Icon(icon, color: Colors.blue.shade700, size: 28),
+            child: Icon(icon, color: AppTokens.primary, size: 24),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppTokens.lg),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey.shade600,
+                  subtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: AppTokens.textSecondary,
                   ),
                 ),
               ],

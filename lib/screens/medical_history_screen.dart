@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../services/mock_data.dart';
 import '../models/medical_record.dart';
+import '../theme/app_tokens.dart';
 import 'package:intl/intl.dart';
 
 class MedicalHistoryScreen extends StatefulWidget {
@@ -25,9 +26,9 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 2,
+      length: 3,
       vsync: this,
-      initialIndex: widget.initialTab,
+      initialIndex: widget.initialTab.clamp(0, 2),
     );
     _loadData();
   }
@@ -58,17 +59,13 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('История посещений'),
-        backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
           tabs: const [
-            Tab(text: 'Посещения'),
-            Tab(text: 'Анализы'),
+            Tab(icon: Icon(Icons.medical_services_rounded), text: 'Визиты'),
+            Tab(icon: Icon(Icons.science_rounded), text: 'Анализы'),
+            Tab(icon: Icon(Icons.description_rounded), text: 'Документы'),
           ],
         ),
       ),
@@ -77,6 +74,29 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
         children: [
           _buildVisitsTab(),
           _buildAnalysesTab(),
+          _buildDocumentsTab(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocumentsTab() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.description_rounded,
+            size: 64,
+            color: Theme.of(context).colorScheme.outline,
+          ),
+          const SizedBox(height: AppTokens.lg),
+          Text(
+            'Документы пока отсутствуют',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -90,7 +110,7 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppTokens.lg),
       itemCount: _records.length,
       itemBuilder: (context, index) {
         final record = _records[index];
@@ -127,8 +147,8 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
                   onSelected: (_) {
                     setState(() => _selectedFilter = filter);
                   },
-                  selectedColor: Colors.blue.shade100,
-                  checkmarkColor: Colors.blue.shade700,
+                  selectedColor: Theme.of(context).colorScheme.primaryContainer,
+                  checkmarkColor: Theme.of(context).colorScheme.primary,
                 ),
               );
             },
@@ -161,19 +181,19 @@ class _VisitCard extends StatelessWidget {
     final dateFormat = DateFormat('dd.MM.yyyy');
     
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
+      margin: const EdgeInsets.only(bottom: AppTokens.md),
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTokens.radiusCard),
       ),
       child: ExpansionTile(
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(AppTokens.sm),
           decoration: BoxDecoration(
-            color: Colors.blue.shade100,
-            borderRadius: BorderRadius.circular(8),
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(AppTokens.radiusInput),
           ),
-          child: const Icon(Icons.medical_services, color: Colors.blue),
+          child: Icon(Icons.medical_services_rounded, color: Theme.of(context).colorScheme.primary),
         ),
         title: Text(
           record.doctorName,
@@ -226,19 +246,19 @@ class _AnalysisCard extends StatelessWidget {
     };
 
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
+      margin: const EdgeInsets.only(bottom: AppTokens.md),
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTokens.radiusCard),
       ),
       child: ExpansionTile(
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(AppTokens.sm),
           decoration: BoxDecoration(
-            color: Colors.green.shade100,
-            borderRadius: BorderRadius.circular(8),
+            color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(AppTokens.radiusInput),
           ),
-          child: const Icon(Icons.science, color: Colors.green),
+          child: Icon(Icons.science_rounded, color: Theme.of(context).colorScheme.secondary),
         ),
         title: Text(
           analysis.name,
@@ -275,7 +295,7 @@ class _AnalysisCard extends StatelessWidget {
                           Text(
                             entry.value.toString(),
                             style: TextStyle(
-                              color: Colors.blue.shade700,
+                              color: Theme.of(context).colorScheme.primary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -289,7 +309,7 @@ class _AnalysisCard extends StatelessWidget {
                   Text(
                     'Примечания: ${analysis.notes}',
                     style: TextStyle(
-                      color: Colors.grey.shade600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontSize: 14,
                     ),
                   ),
@@ -320,7 +340,7 @@ class _InfoRow extends StatelessWidget {
             '$label:',
             style: TextStyle(
               fontWeight: FontWeight.w500,
-              color: Colors.grey.shade700,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ),

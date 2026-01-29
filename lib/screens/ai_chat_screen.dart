@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../services/ai_chat_service.dart';
+import '../theme/app_tokens.dart';
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({super.key});
@@ -9,6 +11,8 @@ class AIChatScreen extends StatefulWidget {
 
 class _AIChatScreenState extends State<AIChatScreen> {
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  bool _isTyping = false;
   final List<ChatMessage> _messages = [
     ChatMessage(
       text: 'Здравствуйте! Я виртуальный помощник Qamqor Clinic. Чем могу помочь?',
@@ -20,147 +24,232 @@ class _AIChatScreenState extends State<AIChatScreen> {
   void _sendMessage() {
     if (_messageController.text.trim().isEmpty) return;
 
+    final text = _messageController.text.trim();
+    _messageController.clear();
+
     setState(() {
       _messages.add(
         ChatMessage(
-          text: _messageController.text,
+          text: text,
           isUser: true,
           timestamp: DateTime.now(),
         ),
       );
+      _isTyping = true;
     });
+    _scrollToBottom();
 
-    _messageController.clear();
-
-    // Имитация ответа ИИ
-    Future.delayed(const Duration(seconds: 1), () {
+    AIChatService.sendMessage(text).then((response) {
       if (mounted) {
         setState(() {
+          _isTyping = false;
           _messages.add(
             ChatMessage(
-              text: _generateAIResponse(_messages.last.text),
+              text: response,
               isUser: false,
               timestamp: DateTime.now(),
             ),
           );
         });
+        _scrollToBottom();
       }
     });
   }
 
-  String _generateAIResponse(String userMessage) {
-    final lowerMessage = userMessage.toLowerCase();
-    
-    if (lowerMessage.contains('запись') || lowerMessage.contains('приём')) {
-      return 'Для записи на приём перейдите в раздел "Запись" в меню приложения. Там вы сможете выбрать удобную дату, время и врача.';
-    } else if (lowerMessage.contains('часы') || lowerMessage.contains('работа')) {
-      return 'Наша клиника работает с понедельника по пятницу с 9:00 до 18:00, в субботу с 9:00 до 14:00. Воскресенье - выходной день.';
-    } else if (lowerMessage.contains('адрес') || lowerMessage.contains('где')) {
-      return 'Наша клиника находится по адресу, указанному в разделе "Профиль". Вы также можете связаться с нами по телефону для уточнения маршрута.';
-    } else if (lowerMessage.contains('услуги') || lowerMessage.contains('что')) {
-      return 'Мы предоставляем широкий спектр медицинских услуг: консультации специалистов, диагностику, лечение и реабилитацию. Подробнее в разделе "Главная".';
-    } else if (lowerMessage.contains('привет') || lowerMessage.contains('здравствуй')) {
-      return 'Здравствуйте! Рад вас видеть. Как дела со здоровьем? Чем могу помочь?';
-    } else {
-      return 'Спасибо за ваш вопрос. Я могу помочь с информацией о записи, часах работы, услугах и адресе клиники. Также вы можете записаться на приём через раздел "Запись" в меню.';
-    }
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _sendQuickReply(String text) {
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          text: text,
+          isUser: true,
+          timestamp: DateTime.now(),
+        ),
+      );
+      _isTyping = true;
+    });
+    _scrollToBottom();
+    AIChatService.sendMessage(text).then((response) {
+      if (mounted) {
+        setState(() {
+          _isTyping = false;
+          _messages.add(
+            ChatMessage(
+              text: response,
+              isUser: false,
+              timestamp: DateTime.now(),
+            ),
+          );
+        });
+        _scrollToBottom();
+      }
+    });
   }
 
   @override
   void dispose() {
     _messageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
+  static const _quickReplies = [
+    'Записаться',
+    'Адрес',
+    'Цены',
+    'Подготовка к анализам',
+  ];
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ИИ Чат'),
-        backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
+        title: const Text('Чат'),
         elevation: 0,
       ),
       body: Column(
         children: [
-          // Информационная панель
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            color: Colors.blue.shade50,
-            child: Row(
-              children: [
-                Icon(Icons.smart_toy, color: Colors.blue.shade700, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Виртуальный помощник Qamqor Clinic',
-                    style: TextStyle(
-                      color: Colors.blue.shade900,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          // Инфо-баннер: не является диагнозом
+          AppInfoBanner(
+            icon: Icons.info_rounded,
+            text: 'Не является диагнозом. При ухудшении самочувствия звоните в клинику.',
           ),
-          
           // Список сообщений
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
+              controller: _scrollController,
+              padding: const EdgeInsets.all(AppTokens.lg),
+              itemCount: _messages.length + (_isTyping ? 1 : 0),
               itemBuilder: (context, index) {
+                if (index == _messages.length) {
+                  return const _TypingIndicator();
+                }
                 return _ChatBubble(message: _messages[index]);
               },
             ),
           ),
-          
-          // Поле ввода
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, -2),
-                ),
-              ],
+          // Быстрые подсказки (quick replies)
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTokens.lg,
+              vertical: AppTokens.sm,
             ),
             child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _messageController,
-                    decoration: InputDecoration(
-                      hintText: 'Введите сообщение...',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
+              children: _quickReplies.map((label) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: AppTokens.sm),
+                  child: FilterChip(
+                    label: Text(label),
+                    onSelected: (_) => _sendQuickReply(label),
+                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    selectedColor: theme.colorScheme.primaryContainer,
+                    checkmarkColor: theme.colorScheme.primary,
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          // Поле ввода
+          Container(
+            padding: const EdgeInsets.all(AppTokens.lg),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+            ),
+            child: SafeArea(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      decoration: InputDecoration(
+                        hintText: 'Сообщение...',
+                        border: OutlineInputBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppTokens.radiusChip),
+                          borderSide: BorderSide(
+                            color: theme.colorScheme.outline,
+                          ),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppTokens.lg,
+                          vertical: AppTokens.sm,
+                        ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
+                      onSubmitted: (_) => _sendMessage(),
+                    ),
+                  ),
+                  const SizedBox(width: AppTokens.sm),
+                  Material(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(AppTokens.radiusChip),
+                    child: InkWell(
+                      onTap: _sendMessage,
+                      borderRadius:
+                          BorderRadius.circular(AppTokens.radiusChip),
+                      child: const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Icon(
+                          Icons.send_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
                     ),
-                    onSubmitted: (_) => _sendMessage(),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade700,
-                    shape: BoxShape.circle,
-                  ),
-                  child: IconButton(
-                    onPressed: _sendMessage,
-                    icon: const Icon(Icons.send, color: Colors.white),
-                  ),
-                ),
-              ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AppInfoBanner extends StatelessWidget {
+  const AppInfoBanner({
+    super.key,
+    required this.icon,
+    required this.text,
+  });
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppTokens.lg,
+        vertical: AppTokens.sm,
+      ),
+      color: theme.colorScheme.primaryContainer.withOpacity(0.6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: theme.colorScheme.primary),
+          const SizedBox(width: AppTokens.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
             ),
           ),
         ],
@@ -181,6 +270,76 @@ class ChatMessage {
   });
 }
 
+/// Анимированные точки «бот печатает».
+class _TypingIndicator extends StatefulWidget {
+  const _TypingIndicator();
+
+  @override
+  State<_TypingIndicator> createState() => _TypingIndicatorState();
+}
+
+class _TypingIndicatorState extends State<_TypingIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHighest,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+            bottomLeft: Radius.circular(4),
+            bottomRight: Radius.circular(16),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (i) {
+            return AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                final t = (_controller.value + i * 0.25) % 1.0;
+                final opacity = 0.4 + 0.6 * (1 - (t - 0.5).abs() * 2).clamp(0.0, 1.0);
+                return Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurfaceVariant.withOpacity(opacity),
+                    shape: BoxShape.circle,
+                  ),
+                );
+              },
+            );
+          }),
+        ),
+      ),
+    );
+  }
+}
+
 class _ChatBubble extends StatelessWidget {
   final ChatMessage message;
 
@@ -197,9 +356,9 @@ class _ChatBubble extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: message.isUser 
-              ? Colors.blue.shade700 
-              : Colors.grey.shade200,
+          color: message.isUser
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16).copyWith(
             bottomRight: message.isUser 
                 ? const Radius.circular(4) 

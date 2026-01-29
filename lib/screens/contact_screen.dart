@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../utils/constants.dart';
+import '../theme/app_tokens.dart';
 
 class ContactScreen extends StatelessWidget {
   const ContactScreen({super.key});
@@ -28,11 +29,10 @@ class ContactScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Контакты'),
-        backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -42,92 +42,75 @@ class ContactScreen extends StatelessWidget {
             Container(
               height: 250,
               width: double.infinity,
-              color: Colors.grey.shade300,
-              child: Stack(
-                children: [
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.map,
-                          size: 64,
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Карта',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${AppConstants.clinicLatitude}, ${AppConstants.clinicLongitude}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ],
+              color: theme.colorScheme.surfaceContainerHighest,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.map_rounded,
+                      size: 64,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: AppTokens.sm),
+                    Text(
+                      'Карта',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: AppTokens.xs),
+                    Text(
+                      '${AppConstants.clinicLatitude}, ${AppConstants.clinicLongitude}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.outline,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-
-            // Контактная информация
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(AppTokens.xl),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Контактная информация',
-                    style: TextStyle(
-                      fontSize: 24,
+                    style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 24),
-
-                  // Телефон
+                  const SizedBox(height: AppTokens.xl),
                   _ContactItem(
-                    icon: Icons.phone,
+                    icon: Icons.call_rounded,
                     title: 'Телефон',
                     value: AppConstants.clinicPhone,
                     onTap: () => _makePhoneCall(AppConstants.clinicPhone),
                     actionText: 'Позвонить',
                   ),
-                  const SizedBox(height: 16),
-
-                  // Email
+                  const SizedBox(height: AppTokens.lg),
                   _ContactItem(
-                    icon: Icons.email,
+                    icon: Icons.email_rounded,
                     title: 'Email',
                     value: AppConstants.clinicEmail,
                     onTap: () => _sendEmail(AppConstants.clinicEmail),
                     actionText: 'Написать',
                   ),
-                  const SizedBox(height: 16),
-
-                  // Адрес
+                  const SizedBox(height: AppTokens.lg),
                   _ContactItem(
-                    icon: Icons.location_on,
+                    icon: Icons.location_on_rounded,
                     title: 'Адрес',
                     value: AppConstants.clinicAddress,
                     onTap: null,
                   ),
-                  const SizedBox(height: 24),
-
-                  // Время работы
+                  const SizedBox(height: AppTokens.xl),
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.all(AppTokens.lg),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.blue.shade200),
+                      color: theme.colorScheme.primaryContainer.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(AppTokens.radiusCard),
+                      border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,26 +118,24 @@ class ContactScreen extends StatelessWidget {
                         Row(
                           children: [
                             Icon(
-                              Icons.access_time,
-                              color: Colors.blue.shade700,
+                              Icons.schedule_rounded,
+                              color: theme.colorScheme.primary,
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppTokens.sm),
                             Text(
                               'Время работы',
-                              style: TextStyle(
-                                fontSize: 18,
+                              style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade900,
+                                color: theme.colorScheme.primary,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppTokens.md),
                         Text(
                           AppConstants.workingHours,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.blue.shade900,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -187,23 +168,24 @@ class _ContactItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Card(
-      elevation: 2,
+      elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppTokens.radiusCard),
       ),
       child: ListTile(
         leading: Container(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(AppTokens.sm),
           decoration: BoxDecoration(
-            color: Colors.blue.shade100,
-            borderRadius: BorderRadius.circular(8),
+            color: theme.colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(AppTokens.radiusInput),
           ),
-          child: Icon(icon, color: Colors.blue.shade700),
+          child: Icon(icon, color: theme.colorScheme.primary),
         ),
         title: Text(
           title,
-          style: const TextStyle(
+          style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),

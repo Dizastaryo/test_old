@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../models/user.dart';
+import '../theme/app_tokens.dart';
+import '../widgets/hero_header.dart';
+import '../widgets/app_buttons.dart';
 import 'auth_screen.dart';
 import 'notifications_screen.dart';
 import 'contact_screen.dart';
+import 'medical_history_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -22,7 +26,7 @@ class ProfileScreen extends StatelessWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Выйти', style: TextStyle(color: Colors.red)),
+            child: const Text('Выйти', style: TextStyle(color: AppTokens.error)),
           ),
         ],
       ),
@@ -54,67 +58,42 @@ class ProfileScreen extends StatelessWidget {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // AppBar с профилем
-          SliverAppBar(
+          HeroHeader(
             expandedHeight: 200,
-            floating: false,
-            pinned: true,
-            backgroundColor: Colors.blue.shade700,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                user.name,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue.shade700, Colors.blue.shade400],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+            title: user.name,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 40),
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 3),
+                    ),
+                    child: Icon(
+                      Icons.person_rounded,
+                      size: 40,
+                      color: AppTokens.primary,
+                    ),
                   ),
-                ),
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 40),
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          size: 40,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ),
             ),
           ),
-
           SliverToBoxAdapter(
             child: Column(
               children: [
-                const SizedBox(height: 24),
-
-                // Меню профиля
+                const SizedBox(height: AppTokens.xl),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
                   child: Column(
                     children: [
                       _ProfileMenuItem(
-                        icon: Icons.person_outline,
+                        icon: Icons.badge_rounded,
                         title: 'Личные данные',
                         onTap: () {
                           Navigator.push(
@@ -127,15 +106,30 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       const Divider(height: 1),
                       _ProfileMenuItem(
-                        icon: Icons.history,
-                        title: 'История записей',
+                        icon: Icons.group_rounded,
+                        title: 'Семья / дети',
                         onTap: () {
-                          // Навигация будет через MainScreen
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Раздел в разработке')),
+                          );
                         },
                       ),
                       const Divider(height: 1),
                       _ProfileMenuItem(
-                        icon: Icons.notifications_outlined,
+                        icon: Icons.folder_rounded,
+                        title: 'История посещений',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MedicalHistoryScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1),
+                      _ProfileMenuItem(
+                        icon: Icons.notifications_rounded,
                         title: 'Уведомления',
                         badge: appProvider.unreadNotificationsCount > 0
                             ? appProvider.unreadNotificationsCount
@@ -151,7 +145,7 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       const Divider(height: 1),
                       _ProfileMenuItem(
-                        icon: Icons.settings_outlined,
+                        icon: Icons.settings_rounded,
                         title: 'Настройки',
                         onTap: () {
                           Navigator.push(
@@ -164,7 +158,17 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       const Divider(height: 1),
                       _ProfileMenuItem(
-                        icon: Icons.contact_phone,
+                        icon: Icons.help_rounded,
+                        title: 'Помощь',
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Раздел в разработке')),
+                          );
+                        },
+                      ),
+                      const Divider(height: 1),
+                      _ProfileMenuItem(
+                        icon: Icons.call_rounded,
                         title: 'Контакты',
                         onTap: () {
                           Navigator.push(
@@ -175,49 +179,18 @@ class ProfileScreen extends StatelessWidget {
                           );
                         },
                       ),
-                      const Divider(height: 1),
-                      _ProfileMenuItem(
-                        icon: Icons.help_outline,
-                        title: 'Помощь',
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Раздел в разработке')),
-                          );
-                        },
-                      ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 24),
-
-                // Кнопка выхода
+                const SizedBox(height: AppTokens.xl),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: OutlinedButton(
-                      onPressed: () => _logout(context),
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.red),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Выйти',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
-                        ),
-                      ),
-                    ),
+                  padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
+                  child: AppDestructiveButton(
+                    label: 'Выйти',
+                    onPressed: () => _logout(context),
                   ),
                 ),
-
-                const SizedBox(height: 32),
+                const SizedBox(height: AppTokens.xxl),
               ],
             ),
           ),
@@ -242,19 +215,20 @@ class _ProfileMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return ListTile(
-      leading: Icon(icon, color: Colors.blue.shade700),
+      leading: Icon(icon, color: theme.colorScheme.primary),
       title: Text(title),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (badge != null && badge! > 0)
             Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              margin: const EdgeInsets.only(right: AppTokens.sm),
+              padding: const EdgeInsets.symmetric(horizontal: AppTokens.sm, vertical: AppTokens.xs),
               decoration: BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.circular(12),
+                color: AppTokens.error,
+                borderRadius: BorderRadius.circular(AppTokens.radiusChip),
               ),
               child: Text(
                 badge.toString(),
@@ -265,8 +239,7 @@ class _ProfileMenuItem extends StatelessWidget {
                 ),
               ),
             ),
-          Icon(Icons.arrow_forward_ios,
-              size: 16, color: Colors.grey.shade400),
+          Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.colorScheme.outline),
         ],
       ),
       onTap: onTap,
@@ -323,9 +296,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       appProvider.updateUser(updatedUser);
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Профиль обновлён'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('Профиль обновлён'),
+          backgroundColor: AppTokens.success,
         ),
       );
     }
@@ -350,7 +323,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppTokens.lg),
         child: Form(
           key: _formKey,
           child: Column(
@@ -359,7 +332,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'Имя',
-                  prefixIcon: Icon(Icons.person),
+                  prefixIcon: Icon(Icons.badge_rounded),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -457,8 +430,6 @@ class SettingsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Настройки'),
-        backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: Consumer<AppProvider>(
@@ -472,13 +443,13 @@ class SettingsScreen extends StatelessWidget {
                 onChanged: (value) {
                   appProvider.toggleTheme();
                 },
-                secondary: const Icon(Icons.dark_mode),
+                secondary: const Icon(Icons.dark_mode_rounded),
               ),
               const Divider(),
               ListTile(
                 title: const Text('Язык'),
                 subtitle: Text(appProvider.language == 'ru' ? 'Русский' : 'Қазақша'),
-                leading: const Icon(Icons.language),
+                leading: const Icon(Icons.language_rounded),
                 trailing: DropdownButton<String>(
                   value: appProvider.language,
                   items: const [
@@ -496,25 +467,25 @@ class SettingsScreen extends StatelessWidget {
               SwitchListTile(
                 title: const Text('Уведомления о записях'),
                 subtitle: const Text('Получать уведомления о предстоящих записях'),
-                value: true, // Моковое значение
+                value: true,
                 onChanged: (value) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Настройка сохранена')),
                   );
                 },
-                secondary: const Icon(Icons.notifications),
+                secondary: const Icon(Icons.notifications_active_rounded),
               ),
               const Divider(),
               SwitchListTile(
                 title: const Text('Email уведомления'),
                 subtitle: const Text('Получать уведомления на email'),
-                value: true, // Моковое значение
+                value: true,
                 onChanged: (value) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Настройка сохранена')),
                   );
                 },
-                secondary: const Icon(Icons.email),
+                secondary: const Icon(Icons.email_rounded),
               ),
             ],
           );
