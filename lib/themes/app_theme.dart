@@ -86,8 +86,8 @@ class AppTheme {
         elevation: 0,
         height: 80,
         indicatorColor: AppTokens.primaryContainer,
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
+        labelTextStyle: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
             return GoogleFonts.manrope(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -184,8 +184,8 @@ class AppTheme {
         height: 80,
         backgroundColor: AppTokens.surfaceDark,
         indicatorColor: AppTokens.primaryDark,
-        labelTextStyle: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
+        labelTextStyle: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
             return GoogleFonts.manrope(
               fontSize: 12,
               fontWeight: FontWeight.w600,
