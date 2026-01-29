@@ -240,7 +240,7 @@ class _NextAppointmentCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
       child: Material(
-        color: theme.colorScheme.surfaceContainerHighest,
+        color: theme.brightness == Brightness.dark ? AppTokens.surface2Dark : AppTokens.surface2,
         borderRadius: BorderRadius.circular(AppTokens.radiusCard),
         child: InkWell(
           onTap: () => Navigator.push(

@@ -154,7 +154,7 @@ class _AIChatScreenState extends State<AIChatScreen> {
                   child: FilterChip(
                     label: Text(label),
                     onSelected: (_) => _sendQuickReply(label),
-                    backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                    backgroundColor: theme.brightness == Brightness.dark ? AppTokens.surface2Dark : AppTokens.surface2,
                     selectedColor: theme.colorScheme.primaryContainer,
                     checkmarkColor: theme.colorScheme.primary,
                   ),
@@ -306,7 +306,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest,
+          color: theme.brightness == Brightness.dark ? AppTokens.surface2Dark : AppTokens.surface2,
           borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(16),
             topRight: Radius.circular(16),
@@ -358,7 +358,7 @@ class _ChatBubble extends StatelessWidget {
         decoration: BoxDecoration(
           color: message.isUser
               ? Theme.of(context).colorScheme.primary
-              : Theme.of(context).colorScheme.surfaceContainerHighest,
+              : (Theme.of(context).brightness == Brightness.dark ? AppTokens.surface2Dark : AppTokens.surface2),
           borderRadius: BorderRadius.circular(16).copyWith(
             bottomRight: message.isUser 
                 ? const Radius.circular(4) 

@@ -427,7 +427,7 @@ class _StepIndicator extends StatelessWidget {
             shape: BoxShape.circle,
             color: isActive
                 ? theme.colorScheme.primary
-                : theme.colorScheme.surfaceContainerHighest,
+                : (theme.brightness == Brightness.dark ? AppTokens.surface2Dark : AppTokens.surface2),
             border: Border.all(
               color: isActive ? theme.colorScheme.primary : theme.colorScheme.outline,
               width: 1.5,

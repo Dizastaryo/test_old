@@ -42,7 +42,7 @@ class ContactScreen extends StatelessWidget {
             Container(
               height: 250,
               width: double.infinity,
-              color: theme.colorScheme.surfaceContainerHighest,
+              color: theme.brightness == Brightness.dark ? AppTokens.surface2Dark : AppTokens.surface2,
               child: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

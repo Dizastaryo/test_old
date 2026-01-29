@@ -18,7 +18,7 @@ class AppInfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppTokens.lg),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
+        color: theme.brightness == Brightness.dark ? AppTokens.surface2Dark : AppTokens.surface2,
         borderRadius: BorderRadius.circular(AppTokens.radiusCard),
         border: Border.all(color: AppTokens.outline.withOpacity(0.5)),
       ),

@@ -161,7 +161,7 @@ class _Chip extends StatelessWidget {
         vertical: AppTokens.sm,
       ),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
+        color: theme.brightness == Brightness.dark ? AppTokens.surface2Dark : AppTokens.surface2,
         borderRadius: BorderRadius.circular(AppTokens.radiusChip),
       ),
       child: Text(label, style: theme.textTheme.bodySmall),
