@@ -28,8 +28,8 @@ dependencies:
   # URL launcher
   url_launcher: ^6.2.4
 
-  # Typography
-  google_fonts: ^6.2.1
+  # Typography (совместимо с Flutter SDK 3.19.0)
+  google_fonts: ^6.1.0
 
 dev_dependencies:
   flutter_test:
