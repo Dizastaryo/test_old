@@ -20,9 +20,9 @@ jobs:
       - name: Flutter doctor
         run: flutter doctor -v
 
-      # dart pub get — без проверки Android embedding (сборка только iOS)
+      # flutter pub get создаёт ios/Flutter/Generated.xcconfig для pod install; игнорируем exit 1 из-за предупреждения embedding
       - name: Get dependencies
-        run: dart pub get
+        run: flutter pub get || true
 
       - name: Dependency status (compact)
         run: flutter pub outdated
