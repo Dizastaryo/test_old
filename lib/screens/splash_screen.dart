@@ -5,6 +5,7 @@ import '../theme/app_tokens.dart';
 import 'auth_screen.dart';
 import 'main_screen.dart';
 import 'onboarding_screen.dart';
+import 'profile_completion_screen.dart';
 
 /// Splash: Hero gradient, лого, лёгкий fade. Маршрут: onboarding → auth/main.
 class SplashScreen extends StatefulWidget {
@@ -56,9 +57,16 @@ class _SplashScreenState extends State<SplashScreen>
       return;
     }
     if (provider.isLoggedIn) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainScreen()),
-      );
+      final user = provider.currentUser;
+      if (user != null && user.isPatient && !user.profileComplete) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const ProfileCompletionScreen()),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const MainScreen()),
+        );
+      }
     } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const AuthScreen()),

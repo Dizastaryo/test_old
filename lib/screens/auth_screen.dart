@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'main_screen.dart';
+import 'profile_completion_screen.dart';
 import '../providers/app_provider.dart';
 import '../services/api_service.dart';
-import 'package:provider/provider.dart';
 
+/// Экран входа: только номер телефона и код подтверждения (OTP в WhatsApp).
+/// Регистрации и «забыл пароль» нет.
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
 
@@ -11,157 +14,150 @@ class AuthScreen extends StatefulWidget {
   State<AuthScreen> createState() => _AuthScreenState();
 }
 
-class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
-  final _loginFormKey = GlobalKey<FormState>();
-  final _registerFormKey = GlobalKey<FormState>();
-  final _resetFormKey = GlobalKey<FormState>();
-  
-  final _loginEmailController = TextEditingController();
-  final _loginPasswordController = TextEditingController();
-  
-  final _registerNameController = TextEditingController();
-  final _registerEmailController = TextEditingController();
-  final _registerPhoneController = TextEditingController();
-  final _registerPasswordController = TextEditingController();
-  final _registerConfirmPasswordController = TextEditingController();
-  
-  final _resetEmailController = TextEditingController();
-  
-  bool _isLoading = false;
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
-  String _registerRole = 'patient';
+class _AuthScreenState extends State<AuthScreen> {
+  final _phoneController = TextEditingController();
+  final _codeController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-  }
+  bool _codeSent = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
-    _tabController.dispose();
-    _loginEmailController.dispose();
-    _loginPasswordController.dispose();
-    _registerNameController.dispose();
-    _registerEmailController.dispose();
-    _registerPhoneController.dispose();
-    _registerPasswordController.dispose();
-    _registerConfirmPasswordController.dispose();
-    _resetEmailController.dispose();
+    _phoneController.dispose();
+    _codeController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
-    if (_loginFormKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      String? msg;
-      try {
-        final appProvider = Provider.of<AppProvider>(context, listen: false);
-        final value = _loginEmailController.text.trim();
-        if (value.isEmpty) {
-          msg = 'Введите email или телефон';
-        } else {
-          final isEmail = value.contains('@');
-          final success = await appProvider.login(
-            email: isEmail ? value : null,
-            phone: isEmail ? null : value,
-            password: _loginPasswordController.text,
-          );
-          if (mounted && success) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const MainScreen()),
-            );
-            setState(() => _isLoading = false);
-            return;
-          }
-        }
-      } catch (e) {
-        msg = e is ApiException ? e.message : e.toString();
-      }
-      if (mounted) {
-        setState(() => _isLoading = false);
-        if (msg != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg), backgroundColor: Colors.red),
-          );
-        }
-      }
-    }
+  static const String _adminPhone = '77001234567';
+
+  String _normalizePhone(String v) {
+    return v.replaceAll(RegExp(r'\D'), '');
   }
 
-  Future<void> _handleRegister() async {
-    if (_registerFormKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      String? msg;
-      try {
-        final appProvider = Provider.of<AppProvider>(context, listen: false);
-        final email = _registerEmailController.text.trim();
-        final phone = _registerPhoneController.text.trim();
-        if (email.isEmpty && phone.isEmpty) {
-          msg = 'Введите email или телефон';
-        } else {
-          await appProvider.register(
-            name: _registerNameController.text.trim(),
-            email: email.isNotEmpty ? email : null,
-            phone: phone.isNotEmpty ? phone : null,
-            password: _registerPasswordController.text,
-            role: _registerRole,
-          );
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (context) => const MainScreen()),
-            );
-            setState(() => _isLoading = false);
-            return;
-          }
-        }
-      } catch (e) {
-        msg = e is ApiException ? e.message : e.toString();
-      }
-      if (mounted) {
-        setState(() => _isLoading = false);
-        if (msg != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(msg), backgroundColor: Colors.red),
-          );
-        }
-      }
-    }
+  bool _isAdminPhone(String normalized) {
+    return normalized == _adminPhone;
   }
 
-  Future<void> _handleResetPassword() async {
-    if (_resetFormKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      try {
-        final value = _resetEmailController.text.trim();
-        final isEmail = value.contains('@');
-        await ApiService.forgotPassword(
-          email: isEmail ? value : null,
-          phone: isEmail ? null : value,
+  Future<void> _loginAsAdmin() async {
+    final phone = _normalizePhone(_phoneController.text);
+    if (phone.length < 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Введите номер телефона'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      final data = await ApiService.loginAdmin(phone);
+      final token = data['access_token']?.toString();
+      if (token == null || token.isEmpty) throw ApiException(500, 'Нет токена');
+      final user = await ApiService.me(token);
+      if (!mounted) return;
+      final appProvider = Provider.of<AppProvider>(context, listen: false);
+      await appProvider.setSession(token, user);
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const MainScreen()),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiException ? e.message : e.toString()),
+            backgroundColor: Colors.red,
+          ),
         );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Если аккаунт существует, на email/телефон отправлены инструкции'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          _tabController.animateTo(0);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e is ApiException ? e.message : e.toString()),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
       }
-      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _requestOtp() async {
+    final phone = _normalizePhone(_phoneController.text);
+    if (phone.length < 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Введите номер телефона (не менее 10 цифр)'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      await ApiService.requestOtp(phone);
+      if (mounted) {
+        setState(() {
+          _codeSent = true;
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Код отправлен в WhatsApp'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiException ? e.message : e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _verifyAndLogin() async {
+    final phone = _normalizePhone(_phoneController.text);
+    final code = _codeController.text.replaceAll(RegExp(r'\D'), '');
+    if (phone.length < 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Введите номер телефона'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+    if (code.length < 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Введите код из WhatsApp'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
+    setState(() => _isLoading = true);
+    try {
+      final data = await ApiService.verifyOtp(phone, code);
+      final token = data['access_token']?.toString();
+      if (token == null || token.isEmpty) throw ApiException(500, 'Нет токена');
+      final user = await ApiService.me(token);
+      if (!mounted) return;
+      final appProvider = Provider.of<AppProvider>(context, listen: false);
+      await appProvider.setSession(token, user);
+      if (!mounted) return;
+      if (user.isPatient && !user.profileComplete) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const ProfileCompletionScreen()),
+        );
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MainScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiException ? e.message : e.toString()),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _backToPhone() {
+    setState(() {
+      _codeSent = false;
+      _codeController.clear();
+    });
   }
 
   @override
@@ -169,412 +165,150 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
     return Scaffold(
       backgroundColor: Colors.blue.shade50,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Логотип и название
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade700,
-                      shape: BoxShape.circle,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                const SizedBox(height: 40),
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade700,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.local_hospital, size: 50, color: Colors.white),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Qamqor Clinic',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue),
+                ),
+                const SizedBox(height: 4),
+                const Text('Частная клиника', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                const SizedBox(height: 32),
+                if (!_codeSent) ...[
+                  const Text(
+                    'Введите номер телефона. Код подтверждения придёт в WhatsApp.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 24),
+                  TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: 'Номер телефона',
+                      hintText: '+7 700 123 45 67',
+                      prefixIcon: const Icon(Icons.phone_rounded),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: Colors.white,
                     ),
-                    child: const Icon(
-                      Icons.local_hospital,
-                      size: 50,
-                      color: Colors.white,
+                    validator: (v) {
+                      final digits = (v ?? '').replaceAll(RegExp(r'\D'), '');
+                      if (digits.length < 10) return 'Не менее 10 цифр';
+                      return null;
+                    },
+                    onChanged: (_) => setState(() {}),
+                  ),
+                  const SizedBox(height: 24),
+                  if (_isAdminPhone(_normalizePhone(_phoneController.text))) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: OutlinedButton(
+                        onPressed: _isLoading ? null : _loginAsAdmin,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.blue.shade700,
+                          side: BorderSide(color: Colors.blue.shade700),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Text('Войти как админ (без кода)'),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _requestOtp,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade700,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('Получить код'),
+                    ),
+                  ),
+                ] else ...[
+                  const Text(
+                    'Введите код из WhatsApp',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _phoneController.text.trim().isEmpty
+                        ? ''
+                        : 'Номер: ${_phoneController.text.trim()}',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  ),
+                  const SizedBox(height: 24),
+                  TextFormField(
+                    controller: _codeController,
+                    keyboardType: TextInputType.number,
+                    maxLength: 8,
+                    decoration: InputDecoration(
+                      labelText: 'Код подтверждения',
+                      hintText: '123456',
+                      prefixIcon: const Icon(Icons.sms_rounded),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      filled: true,
+                      fillColor: Colors.white,
+                      counterText: '',
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _verifyAndLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade700,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('Войти'),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Qamqor Clinic',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Частная клиника',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
+                  TextButton(
+                    onPressed: _isLoading ? null : _backToPhone,
+                    child: const Text('Изменить номер'),
                   ),
                 ],
-              ),
-            ),
-            
-            // Вкладки
-            TabBar(
-              controller: _tabController,
-              labelColor: Colors.blue.shade700,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.blue.shade700,
-              tabs: const [
-                Tab(text: 'Вход'),
-                Tab(text: 'Регистрация'),
-                Tab(text: 'Забыли пароль'),
               ],
             ),
-            
-            // Содержимое вкладок
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildLoginTab(),
-                  _buildRegisterTab(),
-                  _buildResetPasswordTab(),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoginTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Form(
-        key: _loginFormKey,
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _loginEmailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: 'Email или телефон',
-                prefixIcon: const Icon(Icons.person),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Введите email или телефон';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _loginPasswordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: 'Пароль',
-                prefixIcon: const Icon(Icons.lock),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () {
-                    setState(() => _obscurePassword = !_obscurePassword);
-                  },
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Введите пароль';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _handleLogin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Войти',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Вход по email или номеру телефона (бэкенд)',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRegisterTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Form(
-        key: _registerFormKey,
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _registerNameController,
-              decoration: InputDecoration(
-                labelText: 'Имя',
-                prefixIcon: const Icon(Icons.person),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Введите имя';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _registerEmailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                prefixIcon: const Icon(Icons.email),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Введите email';
-                }
-                if (!value.contains('@')) {
-                  return 'Введите корректный email';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _registerPhoneController,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: 'Телефон',
-                prefixIcon: const Icon(Icons.phone),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Введите телефон';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _registerPasswordController,
-              obscureText: _obscurePassword,
-              decoration: InputDecoration(
-                labelText: 'Пароль',
-                prefixIcon: const Icon(Icons.lock),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () {
-                    setState(() => _obscurePassword = !_obscurePassword);
-                  },
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Введите пароль';
-                }
-                if (value.length < 6) {
-                  return 'Пароль должен быть не менее 6 символов';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _registerConfirmPasswordController,
-              obscureText: _obscureConfirmPassword,
-              decoration: InputDecoration(
-                labelText: 'Подтвердите пароль',
-                prefixIcon: const Icon(Icons.lock_outline),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () {
-                    setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
-                  },
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Подтвердите пароль';
-                }
-                if (value != _registerPasswordController.text) {
-                  return 'Пароли не совпадают';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: _registerRole,
-              decoration: InputDecoration(
-                labelText: 'Роль',
-                prefixIcon: const Icon(Icons.badge),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              items: const [
-                DropdownMenuItem(value: 'patient', child: Text('Пациент')),
-                DropdownMenuItem(value: 'doctor', child: Text('Врач')),
-              ],
-              onChanged: (v) {
-                if (v != null) setState(() => _registerRole = v);
-              },
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _handleRegister,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Зарегистрироваться',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildResetPasswordTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Form(
-        key: _resetFormKey,
-        child: Column(
-          children: [
-            const Text(
-              'Введите ваш email для восстановления пароля',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            TextFormField(
-              controller: _resetEmailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                labelText: 'Email',
-                prefixIcon: const Icon(Icons.email),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Введите email';
-                }
-                if (!value.contains('@')) {
-                  return 'Введите корректный email';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _handleResetPassword,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Восстановить пароль',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

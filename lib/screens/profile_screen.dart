@@ -106,16 +106,6 @@ class ProfileScreen extends StatelessWidget {
                       ),
                       const Divider(height: 1),
                       _ProfileMenuItem(
-                        icon: Icons.group_rounded,
-                        title: 'Семья / дети',
-                        onTap: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Раздел в разработке')),
-                          );
-                        },
-                      ),
-                      const Divider(height: 1),
-                      _ProfileMenuItem(
                         icon: Icons.folder_rounded,
                         title: 'История посещений',
                         onTap: () {

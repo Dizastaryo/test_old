@@ -41,46 +41,17 @@ class AppProvider with ChangeNotifier {
     _onboardingCompleted = prefs.getBool(AppConstants.keyOnboardingCompleted) ?? false;
 
     if (_accessToken != null && _accessToken!.isNotEmpty) {
-      if (_accessToken == 'stub_token') {
-        final userJson = prefs.getString(AppConstants.keyUser);
-        if (userJson != null) {
-          try {
-            final map = jsonDecode(userJson) as Map<String, dynamic>?;
-            if (map != null) {
-              _currentUser = User.fromJson(map);
-              _isLoggedIn = true;
-            }
-          } catch (_) {}
-        }
-        if (!_isLoggedIn) {
-          _accessToken = null;
-          await prefs.remove(AppConstants.keyAccessToken);
-        }
-      } else {
-        try {
-          final user = await ApiService.me(_accessToken!);
-          _currentUser = user;
-          _isLoggedIn = true;
-          await prefs.setString(AppConstants.keyUser, jsonEncode(user.toJson()));
-        } catch (_) {
-          _accessToken = null;
-          _currentUser = null;
-          _isLoggedIn = false;
-          await prefs.remove(AppConstants.keyAccessToken);
-          await prefs.remove(AppConstants.keyUser);
-        }
-      }
-    }
-    if (!_isLoggedIn) {
-      final userJson = prefs.getString(AppConstants.keyUser);
-      if (userJson != null) {
-        try {
-          final map = jsonDecode(userJson) as Map<String, dynamic>?;
-          if (map != null) {
-            _currentUser = User.fromJson(map);
-            _isLoggedIn = prefs.getBool(AppConstants.keyIsLoggedIn) ?? false;
-          }
-        } catch (_) {}
+      try {
+        final user = await ApiService.me(_accessToken!);
+        _currentUser = user;
+        _isLoggedIn = true;
+        await prefs.setString(AppConstants.keyUser, jsonEncode(user.toJson()));
+      } catch (_) {
+        _accessToken = null;
+        _currentUser = null;
+        _isLoggedIn = false;
+        await prefs.remove(AppConstants.keyAccessToken);
+        await prefs.remove(AppConstants.keyUser);
       }
     }
 
@@ -89,64 +60,16 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Заглушка: любой email/телефон + любой пароль — вход. Роль по умолчанию patient; если в поле есть "врач" или "doctor" — роль doctor.
-  Future<bool> login({String? email, String? phone, required String password}) async {
-    final value = (email ?? phone ?? '').trim();
-    if (value.isEmpty) return false;
-
-    final role = (value.toLowerCase().contains('врач') || value.toLowerCase().contains('doctor'))
-        ? 'doctor'
-        : 'patient';
-    _accessToken = 'stub_token';
-    _currentUser = User(
-      id: 'stub',
-      name: value,
-      email: value.contains('@') ? value : '',
-      phone: value.contains('@') ? '' : value,
-      age: 0,
-      gender: '',
-      role: role,
-      createdAt: DateTime.now(),
-    );
-    _isLoggedIn = true;
-    _notifications = MockData.getNotifications();
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(AppConstants.keyIsLoggedIn, true);
-    await prefs.setString(AppConstants.keyAccessToken, _accessToken!);
-    await prefs.setString(AppConstants.keyUser, jsonEncode(_currentUser!.toJson()));
-
-    notifyListeners();
-    return true;
-  }
-
-  Future<void> register({
-    required String name,
-    String? email,
-    String? phone,
-    required String password,
-    String role = 'patient',
-  }) async {
-    final data = await ApiService.register(
-      email: email,
-      phone: phone,
-      password: password,
-      role: role,
-    );
-    final token = data['access_token']?.toString();
-    if (token == null || token.isEmpty) throw ApiException(400, 'Нет токена');
-
-    final user = await ApiService.me(token);
+  /// Сохранить сессию после успешного входа по OTP (verify-otp).
+  Future<void> setSession(String token, User user) async {
     _accessToken = token;
-    _currentUser = user.copyWith(name: name);
+    _currentUser = user;
     _isLoggedIn = true;
     _notifications = MockData.getNotifications();
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppConstants.keyIsLoggedIn, true);
     await prefs.setString(AppConstants.keyAccessToken, token);
-    await prefs.setString(AppConstants.keyUser, jsonEncode(_currentUser!.toJson()));
-
+    await prefs.setString(AppConstants.keyUser, jsonEncode(user.toJson()));
     notifyListeners();
   }
 

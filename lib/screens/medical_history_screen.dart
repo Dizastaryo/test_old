@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/app_provider.dart';
-import '../services/mock_data.dart';
+import '../services/api_service.dart';
 import '../models/medical_record.dart';
 import '../theme/app_tokens.dart';
-import 'package:intl/intl.dart';
 
 class MedicalHistoryScreen extends StatefulWidget {
   final int initialTab;
@@ -20,7 +21,11 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
   late TabController _tabController;
   List<MedicalRecord> _records = [];
   List<AnalysisResult> _analyses = [];
+  List<Map<String, dynamic>> _documents = [];
   String _selectedFilter = 'Все';
+  int? _patientId;
+  bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -33,14 +38,109 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
     _loadData();
   }
 
-  void _loadData() {
-    final appProvider = Provider.of<AppProvider>(context, listen: false);
-    final userId = appProvider.currentUser?.id ?? 'user_1';
-    _records = MockData.getMedicalRecords(userId);
-    _analyses = _records
-        .where((r) => r.analyses != null)
-        .expand((r) => r.analyses!)
-        .toList();
+  Future<void> _loadData() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final appProvider = Provider.of<AppProvider>(context, listen: false);
+      final userId = appProvider.currentUser?.id;
+      if (userId == null || userId.isEmpty) {
+        setState(() {
+          _loading = false;
+          _patientId = null;
+          _records = [];
+          _analyses = [];
+          _documents = [];
+        });
+        return;
+      }
+      final uid = int.tryParse(userId) ?? 0;
+      if (uid == 0) {
+        setState(() {
+          _loading = false;
+          _patientId = null;
+          _records = [];
+          _analyses = [];
+          _documents = [];
+        });
+        return;
+      }
+      final patient = await ApiService.medkEnsurePatient(
+        userId: uid,
+        fullName: appProvider.currentUser?.name ?? 'Пациент',
+      );
+      final pid = patient['id'] as int?;
+      if (pid == null) {
+        setState(() {
+          _loading = false;
+          _patientId = null;
+          _records = [];
+          _analyses = [];
+          _documents = [];
+        });
+        return;
+      }
+      final appointments = await ApiService.medkListAppointments(patientId: pid, status: 'completed');
+      final analyses = await ApiService.medkListAnalyses(pid);
+      final documents = await ApiService.medkListDocuments(pid);
+
+      final records = <MedicalRecord>[];
+      for (final a in appointments) {
+        final map = a as Map<String, dynamic>;
+        DateTime? dt;
+        try {
+          final s = map['scheduled_at']?.toString();
+          if (s != null) dt = DateTime.parse(s);
+        } catch (_) {}
+        records.add(MedicalRecord(
+          id: map['id']?.toString() ?? '',
+          userId: userId,
+          doctorId: map['doctor_id']?.toString() ?? '',
+          doctorName: map['doctor_name']?.toString() ?? 'Врач',
+          visitDate: dt ?? DateTime.now(),
+          diagnosis: map['diagnosis']?.toString(),
+          symptoms: map['complaint']?.toString(),
+          treatment: map['treatment_text']?.toString(),
+          analyses: null,
+        ));
+      }
+      final analysisList = <AnalysisResult>[];
+      for (final a in analyses) {
+        final map = a as Map<String, dynamic>;
+        DateTime? dt;
+        try {
+          final s = map['analysis_date']?.toString();
+          if (s != null) dt = DateTime.parse(s);
+        } catch (_) {}
+        analysisList.add(AnalysisResult(
+          id: map['id']?.toString() ?? '',
+          name: map['name']?.toString() ?? 'Анализ',
+          type: map['type']?.toString() ?? 'other',
+          date: dt ?? DateTime.now(),
+          results: Map<String, dynamic>.from(map['results'] is Map ? map['results'] as Map : {}),
+          notes: map['notes']?.toString(),
+        ));
+      }
+      final docList = documents is List ? documents.map((e) => e as Map<String, dynamic>).toList() : <Map<String, dynamic>>[];
+
+      setState(() {
+        _patientId = pid;
+        _records = records;
+        _analyses = analysisList;
+        _documents = docList;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e is ApiException ? e.message : e.toString();
+        _loading = false;
+        _records = [];
+        _analyses = [];
+        _documents = [];
+      });
+    }
   }
 
   @override
@@ -60,6 +160,12 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
       appBar: AppBar(
         title: const Text('История посещений'),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loading ? null : _loadData,
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -69,36 +175,88 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildVisitsTab(),
-          _buildAnalysesTab(),
-          _buildDocumentsTab(),
-        ],
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        ElevatedButton(onPressed: _loadData, child: const Text('Повторить')),
+                      ],
+                    ),
+                  ),
+                )
+              : TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildVisitsTab(),
+                    _buildAnalysesTab(),
+                    _buildDocumentsTab(),
+                  ],
+                ),
     );
   }
 
   Widget _buildDocumentsTab() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.description_rounded,
-            size: 64,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: AppTokens.lg),
-          Text(
-            'Документы пока отсутствуют',
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+    if (_documents.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.description_rounded,
+              size: 64,
+              color: Theme.of(context).colorScheme.outline,
             ),
+            const SizedBox(height: AppTokens.lg),
+            Text(
+              'Документы пока отсутствуют. Врач может добавить выписки и справки в разделе приёма.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppTokens.lg),
+      itemCount: _documents.length,
+      itemBuilder: (context, index) {
+        final doc = _documents[index];
+        final id = doc['id'] as int? ?? 0;
+        final title = doc['title']?.toString() ?? 'Документ';
+        final type = doc['document_type']?.toString() ?? 'other';
+        final createdAt = doc['created_at']?.toString();
+        DateTime? dt;
+        if (createdAt != null) {
+          try {
+            dt = DateTime.parse(createdAt);
+          } catch (_) {}
+        }
+        final typeLabel = type == 'discharge' ? 'Выписка' : type == 'certificate' ? 'Справка' : type == 'referral' ? 'Направление' : 'Документ';
+        return Card(
+          margin: const EdgeInsets.only(bottom: AppTokens.md),
+          child: ListTile(
+            leading: Icon(Icons.description_rounded, color: Theme.of(context).colorScheme.primary),
+            title: Text(title),
+            subtitle: Text('$typeLabel • ${dt != null ? DateFormat('dd.MM.yyyy').format(dt) : ''}'),
+            trailing: const Icon(Icons.open_in_new),
+            onTap: () {
+              if (_patientId != null) {
+                final url = ApiService.medkDocumentFileUrl(_patientId!, id);
+                launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+              }
+            },
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
