@@ -21,7 +21,16 @@ jobs:
         run: flutter doctor -v
 
       - name: Get dependencies
-        run: flutter pub get
+        run: |
+          echo "=== flutter pub get (verbose) ==="
+          flutter pub get --verbose 2>&1 | tee pub_get.log
+          exitcode=${PIPESTATUS[0]}
+          echo "=== Exit code: $exitcode ==="
+          if [ $exitcode -ne 0 ]; then
+            echo "=== Last 150 lines of pub_get.log ==="
+            tail -150 pub_get.log
+            exit $exitcode
+          fi
 
       - name: Install CocoaPods dependencies
         run: |
