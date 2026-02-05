@@ -22,8 +22,8 @@ dependencies:
   # Local storage
   shared_preferences: ^2.2.2
 
-  # Intl (совместимо с flutter_localizations из Flutter SDK)
-  intl: ^0.20.2
+  # Intl (версия задаётся flutter_localizations из Flutter SDK — 0.18.1 в 3.19, 0.20.x в новее)
+  intl: ">=0.18.1 <0.21.0"
 
   # URL launcher
   url_launcher: ^6.2.4
