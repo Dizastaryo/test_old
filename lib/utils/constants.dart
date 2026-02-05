@@ -17,7 +17,11 @@ class AppConstants {
   // SharedPreferences keys
   static const String keyUser = 'user';
   static const String keyIsLoggedIn = 'is_logged_in';
+  static const String keyAccessToken = 'access_token';
   static const String keyLanguage = 'language';
   static const String keyTheme = 'theme';
   static const String keyOnboardingCompleted = 'onboarding_completed';
+
+  // API (бэкенд back_k). Для Android-эмулятора: http://10.0.2.2:8000
+  static const String apiBaseUrl = 'http://localhost:8000';
 }

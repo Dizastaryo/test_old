@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'main_screen.dart';
 import '../providers/app_provider.dart';
+import '../services/api_service.dart';
 import 'package:provider/provider.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -30,6 +31,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   bool _isLoading = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  String _registerRole = 'patient';
 
   @override
   void initState() {
@@ -54,19 +56,37 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   Future<void> _handleLogin() async {
     if (_loginFormKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-
-      final appProvider = Provider.of<AppProvider>(context, listen: false);
-      final success = await appProvider.login(
-        _loginEmailController.text,
-        _loginPasswordController.text,
-      );
-
-      setState(() => _isLoading = false);
-
-      if (mounted && success) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
+      String? msg;
+      try {
+        final appProvider = Provider.of<AppProvider>(context, listen: false);
+        final value = _loginEmailController.text.trim();
+        if (value.isEmpty) {
+          msg = 'Введите email или телефон';
+        } else {
+          final isEmail = value.contains('@');
+          final success = await appProvider.login(
+            email: isEmail ? value : null,
+            phone: isEmail ? null : value,
+            password: _loginPasswordController.text,
+          );
+          if (mounted && success) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const MainScreen()),
+            );
+            setState(() => _isLoading = false);
+            return;
+          }
+        }
+      } catch (e) {
+        msg = e is ApiException ? e.message : e.toString();
+      }
+      if (mounted) {
+        setState(() => _isLoading = false);
+        if (msg != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg), backgroundColor: Colors.red),
+          );
+        }
       }
     }
   }
@@ -74,21 +94,39 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   Future<void> _handleRegister() async {
     if (_registerFormKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-
-      final appProvider = Provider.of<AppProvider>(context, listen: false);
-      await appProvider.register(
-        _registerNameController.text,
-        _registerEmailController.text,
-        _registerPasswordController.text,
-        _registerPhoneController.text,
-      );
-
-      setState(() => _isLoading = false);
-
+      String? msg;
+      try {
+        final appProvider = Provider.of<AppProvider>(context, listen: false);
+        final email = _registerEmailController.text.trim();
+        final phone = _registerPhoneController.text.trim();
+        if (email.isEmpty && phone.isEmpty) {
+          msg = 'Введите email или телефон';
+        } else {
+          await appProvider.register(
+            name: _registerNameController.text.trim(),
+            email: email.isNotEmpty ? email : null,
+            phone: phone.isNotEmpty ? phone : null,
+            password: _registerPasswordController.text,
+            role: _registerRole,
+          );
+          if (mounted) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const MainScreen()),
+            );
+            setState(() => _isLoading = false);
+            return;
+          }
+        }
+      } catch (e) {
+        msg = e is ApiException ? e.message : e.toString();
+      }
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const MainScreen()),
-        );
+        setState(() => _isLoading = false);
+        if (msg != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(msg), backgroundColor: Colors.red),
+          );
+        }
       }
     }
   }
@@ -96,18 +134,33 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
   Future<void> _handleResetPassword() async {
     if (_resetFormKey.currentState!.validate()) {
       setState(() => _isLoading = true);
-      await Future.delayed(const Duration(seconds: 1));
-      setState(() => _isLoading = false);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Инструкции по восстановлению пароля отправлены на email'),
-            backgroundColor: Colors.green,
-          ),
+      try {
+        final value = _resetEmailController.text.trim();
+        final isEmail = value.contains('@');
+        await ApiService.forgotPassword(
+          email: isEmail ? value : null,
+          phone: isEmail ? null : value,
         );
-        _tabController.animateTo(0);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Если аккаунт существует, на email/телефон отправлены инструкции'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          _tabController.animateTo(0);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e is ApiException ? e.message : e.toString()),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -198,8 +251,8 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               controller: _loginEmailController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                labelText: 'Email',
-                prefixIcon: const Icon(Icons.email),
+                labelText: 'Email или телефон',
+                prefixIcon: const Icon(Icons.person),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -208,7 +261,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Введите email';
+                  return 'Введите email или телефон';
                 }
                 return null;
               },
@@ -267,7 +320,7 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
             ),
             const SizedBox(height: 16),
             const Text(
-              'Введите любой текст для входа',
+              'Вход по email или номеру телефона (бэкенд)',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey,
@@ -407,6 +460,26 @@ class _AuthScreenState extends State<AuthScreen> with SingleTickerProviderStateM
                   return 'Пароли не совпадают';
                 }
                 return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _registerRole,
+              decoration: InputDecoration(
+                labelText: 'Роль',
+                prefixIcon: const Icon(Icons.badge),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+              items: const [
+                DropdownMenuItem(value: 'patient', child: Text('Пациент')),
+                DropdownMenuItem(value: 'doctor', child: Text('Врач')),
+              ],
+              onChanged: (v) {
+                if (v != null) setState(() => _registerRole = v);
               },
             ),
             const SizedBox(height: 32),

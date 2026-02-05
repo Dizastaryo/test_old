@@ -39,16 +39,23 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Future<void> _navigate() async {
-    await Future.delayed(const Duration(milliseconds: 2200));
+    await Future.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
     final appProvider = Provider.of<AppProvider>(context, listen: false);
-    if (!appProvider.onboardingCompleted) {
+    for (var i = 0; i < 15 && !appProvider.initialLoadDone; i++) {
+      await Future.delayed(const Duration(milliseconds: 200));
+      if (!mounted) return;
+    }
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+    final provider = Provider.of<AppProvider>(context, listen: false);
+    if (!provider.onboardingCompleted) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const OnboardingScreen()),
       );
       return;
     }
-    if (appProvider.isLoggedIn) {
+    if (provider.isLoggedIn) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const MainScreen()),
       );

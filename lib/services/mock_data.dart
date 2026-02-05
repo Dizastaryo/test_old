@@ -249,6 +249,7 @@ class MockData {
       phone: '+7 (777) 123-45-67',
       age: 35,
       gender: 'Мужской',
+      role: 'patient',
       createdAt: DateTime.now().subtract(const Duration(days: 365)),
     );
   }
