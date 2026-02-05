@@ -152,6 +152,15 @@
     "admin_doctor_added": "Дәрігер қосылды",
     "onboarding_skip": "Өткізіп жіберу",
     "onboarding_next": "Келесі",
-    "splash_loading": "Жүктелуде..."
+    "splash_loading": "Жүктелуде...",
+    "doctor_my_appointments": "Менің қабылдауларым",
+    "doctor_remind_test": "Еске салу тест",
+    "doctor_no_appointments": "Қабылдаулар жоқ",
+    "doctor_retry": "Қайталау",
+    "doctor_remind_test_ok": "Ағымдағы сағаттың еске салулары іске қосылды. WhatsApp-ты тексеріңіз.",
+    "doctor_remind_test_fail": "Еске салуларды іске қосу қатесі",
+    "home_doctor_today": "Бүгін",
+    "home_doctor_appointments_count": "қабылдау",
+    "home_doctor_go_appointments": "Қабылдауларға өту"
   }
 }

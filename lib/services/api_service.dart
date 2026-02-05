@@ -9,13 +9,22 @@ class ApiService {
 
   static Map<String, String> _headers({String? token}) {
     final m = <String, String>{
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
+      'Content-Type': 'application/json; charset=utf-8',
+      'Accept': 'application/json; charset=utf-8',
     };
     if (token != null && token.isNotEmpty) {
       m['Authorization'] = 'Bearer $token';
     }
     return m;
+  }
+
+  /// Декодируем тело ответа в UTF-8, чтобы кириллица (имена врачей/пациентов) не ломалась.
+  static String _bodyUtf8(http.Response r) {
+    try {
+      return utf8.decode(r.bodyBytes);
+    } catch (_) {
+      return r.body;
+    }
   }
 
   /// POST /api/v1/auth/request-otp — запрос кода в WhatsApp
@@ -27,9 +36,9 @@ class ApiService {
       headers: _headers(),
       body: jsonEncode({'phone': normalized}),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
     if (r.statusCode >= 400) {
-      throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+      throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     }
   }
 
@@ -42,9 +51,9 @@ class ApiService {
       headers: _headers(),
       body: jsonEncode({'phone': normalized}),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
     if (r.statusCode >= 400) {
-      throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+      throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     }
     return data;
   }
@@ -58,9 +67,9 @@ class ApiService {
       headers: _headers(),
       body: jsonEncode({'phone': normalized, 'code': code.replaceAll(RegExp(r'\D'), '')}),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
     if (r.statusCode >= 400) {
-      throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+      throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     }
     return data;
   }
@@ -71,9 +80,9 @@ class ApiService {
       Uri.parse('$baseUrl/api/v1/auth/me'),
       headers: _headers(token: token),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
     if (r.statusCode >= 400) {
-      throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+      throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     }
     return User.fromApiMe(data);
   }
@@ -100,9 +109,9 @@ class ApiService {
         'gender': gender.toUpperCase().startsWith('M') ? 'M' : 'F',
       }),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
     if (r.statusCode >= 400) {
-      throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+      throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     }
     return User.fromApiMe(data);
   }
@@ -113,10 +122,10 @@ class ApiService {
       Uri.parse('$baseUrl/api/v1/admin/doctors'),
       headers: _headers(token: token),
     );
-    final data = jsonDecode(r.body is String ? r.body : '[]');
+    final data = jsonDecode(_bodyUtf8(r));
     if (r.statusCode >= 400) {
-      final m = data is Map ? data['detail']?.toString() : r.body;
-      throw ApiException(r.statusCode, m ?? r.body);
+      final m = data is Map ? data['detail']?.toString() : _bodyUtf8(r);
+      throw ApiException(r.statusCode, m ?? _bodyUtf8(r));
     }
     return data is List ? data : [];
   }
@@ -134,9 +143,9 @@ class ApiService {
       headers: _headers(token: token),
       body: jsonEncode({'phone': normalized, 'specialty': specialty.trim()}),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
     if (r.statusCode >= 400) {
-      throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+      throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     }
     return data;
   }
@@ -145,9 +154,9 @@ class ApiService {
   static Future<List<dynamic>> medkListDoctors() async {
     final r = await http.get(Uri.parse('$baseUrl/api/v1/medk/doctors'), headers: _headers());
     if (r.statusCode >= 400) {
-      throw ApiException(r.statusCode, r.body is String ? r.body : 'Ошибка загрузки врачей');
+      throw ApiException(r.statusCode, _bodyUtf8(r).isNotEmpty ? _bodyUtf8(r) : 'Ошибка загрузки врачей');
     }
-    final raw = r.body is String ? r.body : '[]';
+    final raw = _bodyUtf8(r);
     if (raw.trim().isEmpty) return [];
     dynamic data;
     try {
@@ -169,9 +178,9 @@ class ApiService {
       Uri.parse('$baseUrl/api/v1/medk/doctors/by-user/$userId'),
       headers: _headers(),
     );
-    if (r.statusCode == 404 || r.body == 'null' || r.body.isEmpty) return null;
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>?;
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, data?['detail']?.toString() ?? r.body);
+    if (r.statusCode == 404 || _bodyUtf8(r) == 'null' || _bodyUtf8(r).isEmpty) return null;
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>?;
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data?['detail']?.toString() ?? _bodyUtf8(r));
     return data;
   }
 
@@ -193,8 +202,8 @@ class ApiService {
       headers: _headers(token: token),
       body: jsonEncode(body),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     return data;
   }
 
@@ -204,8 +213,8 @@ class ApiService {
       Uri.parse('$baseUrl/api/v1/medk/doctors/ensure?user_id=$userId&full_name=${Uri.encodeComponent(fullName)}'),
       headers: _headers(),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     return data;
   }
 
@@ -216,8 +225,8 @@ class ApiService {
     if (patientId != null) uri += 'patient_id=$patientId&';
     if (status != null && status.isNotEmpty) uri += 'status=$status&';
     final r = await http.get(Uri.parse(uri), headers: _headers());
-    final data = jsonDecode(r.body is String ? r.body : '[]');
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, r.body);
+    final data = jsonDecode(_bodyUtf8(r));
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, _bodyUtf8(r));
     return data is List ? data : [];
   }
 
@@ -237,16 +246,16 @@ class ApiService {
       headers: _headers(),
       body: jsonEncode(body),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     return data;
   }
 
   /// GET /medk/appointments/{id}
   static Future<Map<String, dynamic>> medkGetAppointment(int id) async {
     final r = await http.get(Uri.parse('$baseUrl/api/v1/medk/appointments/$id'), headers: _headers());
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     return data;
   }
 
@@ -269,8 +278,19 @@ class ApiService {
       headers: _headers(),
       body: jsonEncode(body),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
+    return data;
+  }
+
+  /// POST /api/v1/medk/test/run-reminders-now — тестовый запуск напоминалок за текущий час (для врача).
+  static Future<Map<String, dynamic>> medkTestRunRemindersNow() async {
+    final r = await http.post(
+      Uri.parse('$baseUrl/api/v1/medk/test/run-reminders-now'),
+      headers: _headers(),
+    );
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     return data;
   }
 
@@ -280,17 +300,17 @@ class ApiService {
       Uri.parse('$baseUrl/api/v1/medk/patients/by-user/$userId'),
       headers: _headers(),
     );
-    if (r.statusCode == 404 || r.body == 'null' || (r.body.isEmpty)) return null;
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>?;
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, data?['detail']?.toString() ?? r.body);
+    if (r.statusCode == 404 || _bodyUtf8(r) == 'null' || _bodyUtf8(r).isEmpty) return null;
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>?;
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data?['detail']?.toString() ?? _bodyUtf8(r));
     return data;
   }
 
   /// GET /medk/patients
   static Future<List<dynamic>> medkListPatients() async {
     final r = await http.get(Uri.parse('$baseUrl/api/v1/medk/patients'), headers: _headers());
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, r.body);
-    final data = jsonDecode(r.body is String ? r.body : '[]');
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, _bodyUtf8(r));
+    final data = jsonDecode(_bodyUtf8(r));
     return data is List ? data : [];
   }
 
@@ -318,8 +338,8 @@ class ApiService {
       headers: _headers(),
       body: jsonEncode(body),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     return data;
   }
 
@@ -329,8 +349,8 @@ class ApiService {
       Uri.parse('$baseUrl/api/v1/medk/patients/ensure?user_id=$userId&full_name=${Uri.encodeComponent(fullName)}'),
       headers: _headers(),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     return data;
   }
 
@@ -340,8 +360,8 @@ class ApiService {
       Uri.parse('$baseUrl/api/v1/medk/patients/$patientId/active-reminders'),
       headers: _headers(),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     return data;
   }
 
@@ -352,8 +372,8 @@ class ApiService {
       headers: _headers(),
       body: jsonEncode({'status': status}),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     return data;
   }
 
@@ -363,8 +383,8 @@ class ApiService {
       Uri.parse('$baseUrl/api/v1/medk/patients/$patientId/analyses'),
       headers: _headers(),
     );
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, r.body);
-    final data = jsonDecode(r.body is String ? r.body : '[]');
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, _bodyUtf8(r));
+    final data = jsonDecode(_bodyUtf8(r));
     return data is List ? data : [];
   }
 
@@ -392,8 +412,8 @@ class ApiService {
       headers: _headers(),
       body: jsonEncode(body),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     return data;
   }
 
@@ -403,8 +423,8 @@ class ApiService {
       Uri.parse('$baseUrl/api/v1/medk/patients/$patientId/documents'),
       headers: _headers(),
     );
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, r.body);
-    final data = jsonDecode(r.body is String ? r.body : '[]');
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, _bodyUtf8(r));
+    final data = jsonDecode(_bodyUtf8(r));
     return data is List ? data : [];
   }
 
@@ -431,8 +451,8 @@ class ApiService {
     ));
     final streamed = await request.send();
     final r = await http.Response.fromStream(streamed);
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     return data;
   }
 
@@ -458,9 +478,9 @@ class ApiService {
       headers: _headers(),
       body: jsonEncode(body),
     );
-    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
+    final data = jsonDecode(_bodyUtf8(r)) as Map<String, dynamic>? ?? {};
     if (r.statusCode >= 400) {
-      throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+      throw ApiException(r.statusCode, data['detail']?.toString() ?? _bodyUtf8(r));
     }
     return data;
   }

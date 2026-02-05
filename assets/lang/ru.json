@@ -152,6 +152,15 @@
     "admin_doctor_added": "Врач добавлен",
     "onboarding_skip": "Пропустить",
     "onboarding_next": "Далее",
-    "splash_loading": "Загрузка..."
+    "splash_loading": "Загрузка...",
+    "doctor_my_appointments": "Мои приёмы",
+    "doctor_remind_test": "Напомнить тест",
+    "doctor_no_appointments": "Нет приёмов",
+    "doctor_retry": "Повторить",
+    "doctor_remind_test_ok": "Напоминалки за текущий час запущены. Проверьте WhatsApp.",
+    "doctor_remind_test_fail": "Ошибка запуска напоминалок",
+    "home_doctor_today": "На сегодня",
+    "home_doctor_appointments_count": "приёмов",
+    "home_doctor_go_appointments": "Перейти к приёмам"
   }
 }

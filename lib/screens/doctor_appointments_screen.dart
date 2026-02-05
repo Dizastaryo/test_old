@@ -4,7 +4,10 @@ import 'package:intl/intl.dart';
 import 'package:file_picker/file_picker.dart';
 import '../providers/app_provider.dart';
 import '../services/api_service.dart';
+import '../services/lang_service.dart';
 import '../theme/app_tokens.dart';
+
+String _t(String key) => LangService.getString(key);
 
 /// Список приёмов врача: принять приём, завершить, добавить анализы/документы.
 class DoctorAppointmentsScreen extends StatefulWidget {
@@ -58,12 +61,37 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
     }
   }
 
+  Future<void> _runRemindersTest() async {
+    try {
+      await ApiService.medkTestRunRemindersNow();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(_t('doctor_remind_test_ok')), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e is ApiException ? e.message : _t('doctor_remind_test_fail')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Мои приёмы'),
+        title: Text(_t('doctor_my_appointments')),
         actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.notifications_active_outlined, size: 20),
+            label: Text(_t('doctor_remind_test')),
+            onPressed: _runRemindersTest,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loading ? null : _load,
@@ -81,13 +109,13 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
                       children: [
                         Text(_error!, textAlign: TextAlign.center),
                         const SizedBox(height: 16),
-                        ElevatedButton(onPressed: _load, child: const Text('Повторить')),
+                        ElevatedButton(onPressed: _load, child: Text(_t('doctor_retry'))),
                       ],
                     ),
                   ),
                 )
               : _appointments.isEmpty
-                  ? const Center(child: Text('Нет приёмов'))
+                  ? Center(child: Text(_t('doctor_no_appointments')))
                   : RefreshIndicator(
                       onRefresh: _load,
                       child: ListView.builder(

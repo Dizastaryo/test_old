@@ -191,6 +191,7 @@ class _AppointmentScreenState extends State<AppointmentScreen>
 
   @override
   Widget build(BuildContext context) {
+    Provider.of<AppProvider>(context); // перестройка при смене языка
     return Scaffold(
       appBar: AppBar(
         title: Text(_t('appointment_title')),

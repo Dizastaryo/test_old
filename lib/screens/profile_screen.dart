@@ -140,19 +140,21 @@ class ProfileScreen extends StatelessWidget {
                           },
                         ),
                       ],
-                      const Divider(height: 1),
-                      _ProfileMenuItem(
-                        icon: Icons.folder_rounded,
-                        title: _t('profile_visit_history'),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MedicalHistoryScreen(),
-                            ),
-                          );
-                        },
-                      ),
+                      if (!user.isDoctor) ...[
+                        const Divider(height: 1),
+                        _ProfileMenuItem(
+                          icon: Icons.folder_rounded,
+                          title: _t('profile_visit_history'),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const MedicalHistoryScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                       const Divider(height: 1),
                       _ProfileMenuItem(
                         icon: Icons.notifications_rounded,

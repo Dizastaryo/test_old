@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../services/lang_service.dart';
 import 'home_screen.dart';
+import 'doctor_home_screen.dart';
 import 'appointment_screen.dart';
 import 'doctors_screen.dart';
 import 'profile_screen.dart';
@@ -28,7 +29,7 @@ class _MainScreenState extends State<MainScreen> {
   ];
 
   static const _doctorScreens = [
-    HomeScreen(),
+    DoctorHomeScreen(),
     DoctorAppointmentsScreen(),
     ProfileScreen(),
   ];
