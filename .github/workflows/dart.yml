@@ -20,8 +20,9 @@ jobs:
       - name: Flutter doctor
         run: flutter doctor -v
 
+      # dart pub get — без проверки Android embedding (сборка только iOS)
       - name: Get dependencies
-        run: flutter pub get --ignore-deprecation
+        run: dart pub get
 
       - name: Dependency status (compact)
         run: flutter pub outdated
