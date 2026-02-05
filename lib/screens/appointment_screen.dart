@@ -621,7 +621,7 @@ class _CalendarTimePickerScreenState extends State<CalendarTimePickerScreen> {
                 _selectedDay!.day == day.day;
             Color bg;
             if (isPast) {
-              bg = theme.colorScheme.surfaceContainerHighest.withOpacity(0.5);
+              bg = theme.colorScheme.surfaceVariant.withOpacity(0.5);
             } else if (hasFree) {
               bg = AppTokens.success.withOpacity(0.25);
             } else {
