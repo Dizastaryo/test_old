@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
+import '../services/lang_service.dart';
 import 'home_screen.dart';
 import 'appointment_screen.dart';
 import 'doctors_screen.dart';
@@ -55,21 +56,21 @@ class _MainScreenState extends State<MainScreen> {
         onDestinationSelected: (i) => setState(() => _currentIndex = i),
         destinations: isAdmin
             ? [
-                const NavigationDestination(icon: Icon(Icons.home_rounded), label: 'Главная'),
-                const NavigationDestination(icon: Icon(Icons.medical_services_rounded), label: 'Врачи'),
-                const NavigationDestination(icon: Icon(Icons.person_rounded), label: 'Профиль'),
+                NavigationDestination(icon: const Icon(Icons.home_rounded), label: LangService.getString('nav_home')),
+                NavigationDestination(icon: const Icon(Icons.medical_services_rounded), label: LangService.getString('nav_doctors')),
+                NavigationDestination(icon: const Icon(Icons.person_rounded), label: LangService.getString('nav_profile')),
               ]
             : isDoctor
                 ? [
-                const NavigationDestination(icon: Icon(Icons.home_rounded), label: 'Главная'),
-                const NavigationDestination(icon: Icon(Icons.event_note_rounded), label: 'Приёмы'),
-                const NavigationDestination(icon: Icon(Icons.person_rounded), label: 'Профиль'),
+                NavigationDestination(icon: const Icon(Icons.home_rounded), label: LangService.getString('nav_home')),
+                NavigationDestination(icon: const Icon(Icons.event_note_rounded), label: LangService.getString('nav_appointments')),
+                NavigationDestination(icon: const Icon(Icons.person_rounded), label: LangService.getString('nav_profile')),
                   ]
                 : [
-                    const NavigationDestination(icon: Icon(Icons.home_rounded), label: 'Главная'),
-                    const NavigationDestination(icon: Icon(Icons.event_available_rounded), label: 'Запись'),
-                    const NavigationDestination(icon: Icon(Icons.groups_rounded), label: 'Врачи'),
-                    const NavigationDestination(icon: Icon(Icons.person_rounded), label: 'Профиль'),
+                    NavigationDestination(icon: const Icon(Icons.home_rounded), label: LangService.getString('nav_home')),
+                    NavigationDestination(icon: const Icon(Icons.event_available_rounded), label: LangService.getString('nav_booking')),
+                    NavigationDestination(icon: const Icon(Icons.groups_rounded), label: LangService.getString('nav_doctors')),
+                    NavigationDestination(icon: const Icon(Icons.person_rounded), label: LangService.getString('nav_profile')),
                   ],
       ),
     );

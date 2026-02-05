@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
-import '../services/mock_data.dart';
 import '../services/api_service.dart';
+import '../services/lang_service.dart';
 import '../models/promotion.dart';
+
+String _t(String key) => LangService.getString(key);
 import '../models/appointment.dart';
 import '../models/doctor.dart';
 import '../theme/app_tokens.dart';
@@ -24,11 +26,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Doctor> _doctors = [];
+  List<Appointment> _appointments = [];
+  List<Promotion> _promotions = [];
 
   @override
   void initState() {
     super.initState();
     _loadDoctors();
+    _loadPromotions();
+    _loadAppointments();
   }
 
   Future<void> _loadDoctors() async {
@@ -42,20 +48,47 @@ class _HomeScreenState extends State<HomeScreen> {
     } catch (_) {}
   }
 
+  Future<void> _loadPromotions() async {
+    try {
+      final list = await LangService.getPromotions();
+      if (mounted) setState(() => _promotions = list);
+    } catch (_) {}
+  }
+
+  Future<void> _loadAppointments() async {
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    final user = appProvider.currentUser;
+    if (user == null) return;
+    final userId = int.tryParse(user.id);
+    if (userId == null) return;
+    try {
+      Map<String, dynamic>? patient = await ApiService.medkGetPatientByUser(userId);
+      patient ??= await ApiService.medkEnsurePatient(userId: userId, fullName: user.name);
+      final patientId = patient['id'] is int ? patient['id'] as int : int.tryParse(patient['id']?.toString() ?? '');
+      if (patientId == null) return;
+      final list = await ApiService.medkListAppointments(patientId: patientId);
+      if (mounted) {
+        setState(() {
+          _appointments = list
+              .map((e) => Appointment.fromMedkJson(Map<String, dynamic>.from(e as Map), userId: user.id))
+              .toList();
+        });
+      }
+    } catch (_) {}
+  }
+
   @override
   Widget build(BuildContext context) {
     final appProvider = Provider.of<AppProvider>(context);
     final user = appProvider.currentUser;
-    final userId = user?.id ?? 'user_1';
-    final appointments = MockData.getAppointments(userId);
-    final nextAppointment = appointments
+    final nextAppointment = _appointments
         .where((a) => a.status == 'scheduled' && a.dateTime.isAfter(DateTime.now()))
         .isEmpty
         ? null
-        : appointments
+        : _appointments
             .where((a) => a.status == 'scheduled' && a.dateTime.isAfter(DateTime.now()))
             .reduce((a, b) => a.dateTime.isBefore(b.dateTime) ? a : b);
-    final promotions = MockData.getPromotions().where((p) => p.isActive).toList();
+    final promotionsActive = _promotions.where((p) => p.isActive).toList();
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -64,8 +97,8 @@ class _HomeScreenState extends State<HomeScreen> {
           HeroHeader(
             expandedHeight: 120,
             title: user != null
-                ? 'Добро пожаловать, ${user.name.split(' ').first}!'
-                : 'Qamqor Clinic',
+                ? '${_t('home_welcome')}${user.name.split(' ').first}!'
+                : _t('home_welcome_guest'),
           ),
           SliverToBoxAdapter(
             child: Column(
@@ -78,15 +111,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: AppTokens.xl),
                 ],
 
-                // Promo carousel
-                if (promotions.isNotEmpty) ...[
+                // Promo carousel (из lang/ru.json)
+                if (promotionsActive.isNotEmpty) ...[
                   const SizedBox(height: AppTokens.lg),
                   SizedBox(
                     height: 200,
                     child: PageView.builder(
-                      itemCount: promotions.length,
+                      itemCount: promotionsActive.length,
                       itemBuilder: (context, index) {
-                        final p = promotions[index];
+                        final p = promotionsActive[index];
                         return AppPromoCard(
                           title: p.title,
                           description: p.description,
@@ -105,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Быстрые действия',
+                        _t('home_quick_actions'),
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -121,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           AppActionCard(
                             icon: Icons.add_circle_rounded,
-                            title: 'Запись на приём',
+                            title: _t('home_booking'),
                             color: AppTokens.primary,
                             onTap: () => Navigator.push(
                               context,
@@ -132,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           AppActionCard(
                             icon: Icons.groups_rounded,
-                            title: 'Врачи',
+                            title: _t('home_doctors'),
                             color: AppTokens.secondary,
                             onTap: () => Navigator.push(
                               context,
@@ -143,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           AppActionCard(
                             icon: Icons.science_rounded,
-                            title: 'Анализы',
+                            title: _t('home_analyses'),
                             color: AppTokens.info,
                             onTap: () => Navigator.push(
                               context,
@@ -154,7 +187,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           AppActionCard(
                             icon: Icons.call_rounded,
-                            title: 'Контакты',
+                            title: _t('home_contacts'),
                             color: AppTokens.warning,
                             onTap: () => Navigator.push(
                               context,
@@ -177,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Рекомендуемые врачи',
+                        _t('home_recommended_doctors'),
                         style: theme.textTheme.titleLarge?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -189,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             builder: (_) => const DoctorsScreen(),
                           ),
                         ),
-                        child: const Text('Все врачи'),
+                        child: Text(_t('home_all_doctors')),
                       ),
                     ],
                   ),
@@ -198,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 SizedBox(
                   height: 128,
                   child: _doctors.isEmpty
-                      ? const Center(child: Text('Загрузка врачей...'))
+                      ? Center(child: Text(_t('home_loading_doctors')))
                       : ListView.builder(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
@@ -215,7 +248,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
                   child: Text(
-                    'Наши услуги',
+                    _t('home_our_services'),
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -228,20 +261,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       _ServiceTile(
                         icon: Icons.medical_services_rounded,
-                        title: 'Консультация врача',
-                        subtitle: 'Профессиональная консультация специалистов',
+                        title: _t('home_service_consultation'),
+                        subtitle: _t('home_service_consultation_sub'),
                       ),
                       const SizedBox(height: AppTokens.md),
                       _ServiceTile(
                         icon: Icons.health_and_safety_rounded,
-                        title: 'Диагностика',
-                        subtitle: 'Современное оборудование для точной диагностики',
+                        title: _t('home_service_diagnostics'),
+                        subtitle: _t('home_service_diagnostics_sub'),
                       ),
                       const SizedBox(height: AppTokens.md),
                       _ServiceTile(
                         icon: Icons.local_pharmacy_rounded,
-                        title: 'Лечение',
-                        subtitle: 'Эффективные методы лечения и реабилитации',
+                        title: _t('home_service_treatment'),
+                        subtitle: _t('home_service_treatment_sub'),
                       ),
                     ],
                   ),
@@ -300,7 +333,7 @@ class _NextAppointmentCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Следующая запись',
+                        _t('home_next_appointment'),
                         style: theme.textTheme.labelMedium?.copyWith(
                           color: AppTokens.textSecondary,
                         ),

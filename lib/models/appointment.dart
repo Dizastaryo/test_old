@@ -48,4 +48,23 @@ class Appointment {
       createdAt: DateTime.parse(json['createdAt']),
     );
   }
+
+  /// Из ответа API medk: id, patient_id, doctor_id, scheduled_at, status, doctor_name, created_at
+  factory Appointment.fromMedkJson(Map<String, dynamic> json, {String? userId}) {
+    final rawId = json['id'];
+    final rawDoctorId = json['doctor_id'];
+    final scheduledAt = json['scheduled_at'];
+    final createdAt = json['created_at'];
+    return Appointment(
+      id: rawId is int ? rawId.toString() : (rawId?.toString() ?? ''),
+      userId: userId ?? (json['patient_id']?.toString() ?? ''),
+      doctorId: rawDoctorId is int ? rawDoctorId.toString() : (rawDoctorId?.toString() ?? ''),
+      doctorName: (json['doctor_name'] ?? 'Врач').toString(),
+      doctorSpecialization: (json['doctor_specialization'] ?? '').toString(),
+      dateTime: scheduledAt != null ? DateTime.parse(scheduledAt.toString()) : DateTime.now(),
+      status: (json['status'] ?? 'scheduled').toString(),
+      notes: json['complaint']?.toString(),
+      createdAt: createdAt != null ? DateTime.parse(createdAt.toString()) : DateTime.now(),
+    );
+  }
 }

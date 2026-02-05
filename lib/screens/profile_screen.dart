@@ -3,8 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../models/user.dart';
+import '../services/lang_service.dart';
 import '../theme/app_tokens.dart';
+
 import '../widgets/hero_header.dart';
+
+String _t(String key) => LangService.getString(key);
 import '../widgets/app_buttons.dart';
 import 'auth_screen.dart';
 import 'notifications_screen.dart';
@@ -19,16 +23,16 @@ class ProfileScreen extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Выход'),
-        content: const Text('Вы уверены, что хотите выйти?'),
+        title: Text(_t('profile_logout')),
+        content: Text(_t('profile_logout_confirm')),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Отмена'),
+            child: Text(_t('profile_cancel')),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Выйти', style: TextStyle(color: AppTokens.error)),
+            child: Text(_t('profile_logout_btn'), style: const TextStyle(color: AppTokens.error)),
           ),
         ],
       ),
@@ -52,8 +56,8 @@ class ProfileScreen extends StatelessWidget {
     final user = appProvider.currentUser;
 
     if (user == null) {
-      return const Scaffold(
-        body: Center(child: Text('Пользователь не найден')),
+      return Scaffold(
+        body: Center(child: Text(_t('profile_user_not_found'))),
       );
     }
 
@@ -67,17 +71,9 @@ class ProfileScreen extends StatelessWidget {
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    user.name,
-                    style: GoogleFonts.manrope(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
                   Container(
                     width: 80,
                     height: 80,
@@ -90,6 +86,19 @@ class ProfileScreen extends StatelessWidget {
                       Icons.person_rounded,
                       size: 40,
                       color: AppTokens.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      user.name,
+                      style: GoogleFonts.manrope(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 ],
@@ -106,7 +115,7 @@ class ProfileScreen extends StatelessWidget {
                     children: [
                       _ProfileMenuItem(
                         icon: Icons.badge_rounded,
-                        title: 'Личные данные',
+                        title: _t('profile_personal_data'),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -120,7 +129,7 @@ class ProfileScreen extends StatelessWidget {
                         const Divider(height: 1),
                         _ProfileMenuItem(
                           icon: Icons.medical_services_rounded,
-                          title: 'Карточка врача',
+                          title: _t('profile_doctor_card'),
                           onTap: () {
                             Navigator.push(
                               context,
@@ -134,7 +143,7 @@ class ProfileScreen extends StatelessWidget {
                       const Divider(height: 1),
                       _ProfileMenuItem(
                         icon: Icons.folder_rounded,
-                        title: 'История посещений',
+                        title: _t('profile_visit_history'),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -147,7 +156,7 @@ class ProfileScreen extends StatelessWidget {
                       const Divider(height: 1),
                       _ProfileMenuItem(
                         icon: Icons.notifications_rounded,
-                        title: 'Уведомления',
+                        title: _t('profile_notifications'),
                         badge: appProvider.unreadNotificationsCount > 0
                             ? appProvider.unreadNotificationsCount
                             : null,
@@ -163,7 +172,7 @@ class ProfileScreen extends StatelessWidget {
                       const Divider(height: 1),
                       _ProfileMenuItem(
                         icon: Icons.settings_rounded,
-                        title: 'Настройки',
+                        title: _t('profile_settings'),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -176,17 +185,17 @@ class ProfileScreen extends StatelessWidget {
                       const Divider(height: 1),
                       _ProfileMenuItem(
                         icon: Icons.help_rounded,
-                        title: 'Помощь',
+                        title: _t('profile_help'),
                         onTap: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Раздел в разработке')),
+                            SnackBar(content: Text(_t('profile_help_dev'))),
                           );
                         },
                       ),
                       const Divider(height: 1),
                       _ProfileMenuItem(
                         icon: Icons.call_rounded,
-                        title: 'Контакты',
+                        title: _t('profile_contacts'),
                         onTap: () {
                           Navigator.push(
                             context,
@@ -203,7 +212,7 @@ class ProfileScreen extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
                   child: AppDestructiveButton(
-                    label: 'Выйти',
+                    label: _t('profile_logout_btn_main'),
                     onPressed: () => _logout(context),
                   ),
                 ),
@@ -314,7 +323,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Профиль обновлён'),
+          content: Text(_t('profile_updated')),
           backgroundColor: AppTokens.success,
         ),
       );
@@ -325,16 +334,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Редактировать профиль'),
+        title: Text(_t('profile_edit_title')),
         backgroundColor: Colors.blue.shade700,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _saveProfile,
-            child: const Text(
-              'Сохранить',
-              style: TextStyle(color: Colors.white),
+            child: Text(
+              _t('profile_save'),
+              style: const TextStyle(color: Colors.white),
             ),
           ),
         ],
@@ -347,13 +356,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Имя',
+                decoration: InputDecoration(
+                  labelText: _t('profile_label_name'),
                   prefixIcon: Icon(Icons.badge_rounded),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Введите имя';
+                    return _t('profile_validate_name');
                   }
                   return null;
                 },
@@ -362,13 +371,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
+                decoration: InputDecoration(
+                  labelText: _t('profile_label_email'),
                   prefixIcon: Icon(Icons.email),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Введите email';
+                    return _t('profile_validate_email');
                   }
                   return null;
                 },
@@ -377,13 +386,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               TextFormField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                  labelText: 'Телефон',
+                decoration: InputDecoration(
+                  labelText: _t('profile_label_phone'),
                   prefixIcon: Icon(Icons.phone),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Введите телефон';
+                    return _t('profile_validate_phone');
                   }
                   return null;
                 },
@@ -392,16 +401,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               TextFormField(
                 controller: _ageController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Возраст',
+                decoration: InputDecoration(
+                  labelText: _t('profile_label_age'),
                   prefixIcon: Icon(Icons.cake),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Введите возраст';
+                    return _t('profile_validate_age');
                   }
                   if (int.tryParse(value) == null) {
-                    return 'Введите корректный возраст';
+                    return _t('profile_validate_age_invalid');
                   }
                   return null;
                 },
@@ -409,16 +418,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedGender,
-                decoration: const InputDecoration(
-                  labelText: 'Пол',
+                decoration: InputDecoration(
+                  labelText: _t('profile_label_gender'),
                   prefixIcon: Icon(Icons.wc),
                 ),
-                items: ['Мужской', 'Женский'].map((gender) {
-                  return DropdownMenuItem(
-                    value: gender,
-                    child: Text(gender),
-                  );
-                }).toList(),
+                items: [
+                  DropdownMenuItem(value: 'Мужской', child: Text(_t('profile_gender_male'))),
+                  DropdownMenuItem(value: 'Женский', child: Text(_t('profile_gender_female'))),
+                ],
                 onChanged: (value) {
                   setState(() {
                     _selectedGender = value;
@@ -426,7 +433,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Выберите пол';
+                    return _t('profile_validate_gender');
                   }
                   return null;
                 },
@@ -446,7 +453,7 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Настройки'),
+        title: Text(_t('settings_title')),
         elevation: 0,
       ),
       body: Consumer<AppProvider>(
@@ -454,8 +461,8 @@ class SettingsScreen extends StatelessWidget {
           return ListView(
             children: [
               SwitchListTile(
-                title: const Text('Тёмная тема'),
-                subtitle: const Text('Переключить на тёмную тему'),
+                title: Text(_t('settings_dark_theme')),
+                subtitle: Text(_t('settings_dark_theme_sub')),
                 value: appProvider.isDarkMode,
                 onChanged: (value) {
                   appProvider.toggleTheme();
@@ -464,14 +471,14 @@ class SettingsScreen extends StatelessWidget {
               ),
               const Divider(),
               ListTile(
-                title: const Text('Язык'),
-                subtitle: Text(appProvider.language == 'ru' ? 'Русский' : 'Қазақша'),
+                title: Text(_t('settings_language')),
+                subtitle: Text(appProvider.language == 'ru' ? _t('settings_lang_ru') : _t('settings_lang_kk')),
                 leading: const Icon(Icons.language_rounded),
                 trailing: DropdownButton<String>(
                   value: appProvider.language,
-                  items: const [
-                    DropdownMenuItem(value: 'ru', child: Text('Русский')),
-                    DropdownMenuItem(value: 'kk', child: Text('Қазақша')),
+                  items: [
+                    DropdownMenuItem(value: 'ru', child: Text(_t('settings_lang_ru'))),
+                    DropdownMenuItem(value: 'kk', child: Text(_t('settings_lang_kk'))),
                   ],
                   onChanged: (value) {
                     if (value != null) {
@@ -482,24 +489,24 @@ class SettingsScreen extends StatelessWidget {
               ),
               const Divider(),
               SwitchListTile(
-                title: const Text('Уведомления о записях'),
-                subtitle: const Text('Получать уведомления о предстоящих записях'),
+                title: Text(_t('settings_notif_appointments')),
+                subtitle: Text(_t('settings_notif_appointments_sub')),
                 value: true,
                 onChanged: (value) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Настройка сохранена')),
+                    SnackBar(content: Text(_t('settings_saved'))),
                   );
                 },
                 secondary: const Icon(Icons.notifications_active_rounded),
               ),
               const Divider(),
               SwitchListTile(
-                title: const Text('Email уведомления'),
-                subtitle: const Text('Получать уведомления на email'),
+                title: Text(_t('settings_email_notif')),
+                subtitle: Text(_t('settings_email_notif_sub')),
                 value: true,
                 onChanged: (value) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Настройка сохранена')),
+                    SnackBar(content: Text(_t('settings_saved'))),
                   );
                 },
                 secondary: const Icon(Icons.email_rounded),

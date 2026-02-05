@@ -48,6 +48,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/lang/
 
 # Иконка приложения: исходник — logoti.png в корне проекта
 flutter_launcher_icons:

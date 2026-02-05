@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/doctor.dart';
+import '../services/lang_service.dart';
 import '../theme/app_tokens.dart';
+
+String _t(String key) => LangService.getString(key);
 import '../widgets/app_buttons.dart';
 
 /// Экран детальной информации о враче: фото, о враче, услуги, расписание, CTA «Записаться».
@@ -15,7 +18,7 @@ class DoctorDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Врач'),
+        title: Text(_t('doctor_detail_title')),
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -83,10 +86,9 @@ class DoctorDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppTokens.xl),
 
-            // О враче
             if (doctor.description.isNotEmpty) ...[
               Text(
-                'О враче',
+                _t('doctor_about'),
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -99,9 +101,8 @@ class DoctorDetailScreen extends StatelessWidget {
               const SizedBox(height: AppTokens.xl),
             ],
 
-            // Услуги (из профиля врача или по умолчанию)
             Text(
-              'Услуги',
+              _t('doctor_services'),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -118,16 +119,15 @@ class DoctorDetailScreen extends StatelessWidget {
             ),
             const SizedBox(height: AppTokens.xl),
 
-            // Расписание
             Text(
-              'Ближайшие слоты',
+              _t('doctor_schedule'),
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: AppTokens.sm),
             Text(
-              'Пн–Пт: 09:00–18:00. Запись через форму ниже.',
+              _t('doctor_schedule_hint'),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -136,7 +136,7 @@ class DoctorDetailScreen extends StatelessWidget {
 
             // CTA
             AppTonalButton(
-              label: 'Записаться к этому врачу',
+              label: _t('doctor_book_btn'),
               icon: const Icon(Icons.event_available_rounded, size: 20),
               onPressed: () {
                 Navigator.pop(context, doctor);

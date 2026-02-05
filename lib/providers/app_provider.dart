@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../models/notification_model.dart';
-import '../services/mock_data.dart';
 import '../services/api_service.dart';
+import '../services/lang_service.dart';
 import '../utils/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -39,6 +39,7 @@ class AppProvider with ChangeNotifier {
     _isDarkMode = prefs.getBool(AppConstants.keyTheme) ?? false;
     _language = prefs.getString(AppConstants.keyLanguage) ?? 'ru';
     _onboardingCompleted = prefs.getBool(AppConstants.keyOnboardingCompleted) ?? false;
+    await LangService.loadLocale(_language);
 
     if (_accessToken != null && _accessToken!.isNotEmpty) {
       try {
@@ -55,7 +56,11 @@ class AppProvider with ChangeNotifier {
       }
     }
 
-    _notifications = MockData.getNotifications();
+    try {
+      _notifications = await LangService.getNotifications();
+    } catch (_) {
+      _notifications = [];
+    }
     _initialLoadDone = true;
     notifyListeners();
   }
@@ -65,7 +70,11 @@ class AppProvider with ChangeNotifier {
     _accessToken = token;
     _currentUser = user;
     _isLoggedIn = true;
-    _notifications = MockData.getNotifications();
+    try {
+      _notifications = await LangService.getNotifications();
+    } catch (_) {
+      _notifications = [];
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppConstants.keyIsLoggedIn, true);
     await prefs.setString(AppConstants.keyAccessToken, token);
@@ -102,11 +111,16 @@ class AppProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void setLanguage(String lang) {
+  Future<void> setLanguage(String lang) async {
+    await LangService.loadLocale(lang);
     _language = lang;
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setString(AppConstants.keyLanguage, lang);
-    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(AppConstants.keyLanguage, lang);
+    try {
+      _notifications = await LangService.getNotifications();
+    } catch (_) {
+      _notifications = [];
+    }
     notifyListeners();
   }
 

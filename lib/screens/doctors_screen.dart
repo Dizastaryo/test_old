@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../models/doctor.dart';
 import '../services/api_service.dart';
+import '../services/lang_service.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_buttons.dart';
+
+String _t(String key) => LangService.getString(key);
 import 'appointment_screen.dart';
 import 'doctor_detail_screen.dart';
 
@@ -16,7 +19,7 @@ class DoctorsScreen extends StatefulWidget {
 class _DoctorsScreenState extends State<DoctorsScreen> {
   List<Doctor> _doctors = [];
   List<Doctor> _filteredDoctors = [];
-  String _selectedSpecialization = 'Все';
+  String _selectedSpecialization = 'all';
   final TextEditingController _searchController = TextEditingController();
   bool _loading = true;
   String? _error;
@@ -36,8 +39,15 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
     try {
       final list = await ApiService.medkListDoctors();
       if (mounted) {
+        final doctors = <Doctor>[];
+        for (final e in list) {
+          if (e is! Map) continue;
+          try {
+            doctors.add(Doctor.fromMedkJson(Map<String, dynamic>.from(e as Map)));
+          } catch (_) {}
+        }
         setState(() {
-          _doctors = list.map((e) => Doctor.fromMedkJson(Map<String, dynamic>.from(e as Map))).toList();
+          _doctors = doctors;
           _loading = false;
           _applyFilters();
         });
@@ -62,13 +72,13 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
 
   List<String> get _specializations {
     final specializations = _doctors.map((d) => d.specialization).toSet().toList();
-    specializations.insert(0, 'Все');
+    specializations.insert(0, 'all');
     return specializations;
   }
 
   void _applyFilters() {
     var list = _doctors;
-    if (_selectedSpecialization != 'Все') {
+    if (_selectedSpecialization != 'all') {
       list = list.where((d) => d.specialization == _selectedSpecialization).toList();
     }
     final q = _searchController.text.trim().toLowerCase();
@@ -93,7 +103,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Врачи'),
+        title: Text(_t('doctors_title')),
         elevation: 0,
       ),
       body: Column(
@@ -107,7 +117,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Поиск по имени или специальности',
+                hintText: _t('doctors_search_hint'),
                 prefixIcon: const Icon(Icons.search_rounded),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppTokens.radiusInput),
@@ -129,7 +139,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(right: AppTokens.sm),
                   child: FilterChip(
-                    label: Text(spec),
+                    label: Text(spec == 'all' ? _t('doctors_all') : spec),
                     selected: isSelected,
                     onSelected: (_) => _filterDoctors(spec),
                     selectedColor: theme.colorScheme.primaryContainer,
@@ -156,15 +166,41 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
                               TextButton.icon(
                                 onPressed: _loadDoctors,
                                 icon: const Icon(Icons.refresh_rounded),
-                                label: const Text('Повторить'),
+                                label: Text(_t('doctors_retry')),
                               ),
                             ],
                           ),
                         ),
                       )
                     : _filteredDoctors.isEmpty
-                        ? const Center(
-                            child: Text('Врачи не найдены'),
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppTokens.lg),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _t('doctors_not_found'),
+                                    style: theme.textTheme.titleMedium,
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: AppTokens.sm),
+                                  Text(
+                                    _t('doctors_backend_hint'),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: AppTokens.md),
+                                  TextButton.icon(
+                                    onPressed: _loadDoctors,
+                                    icon: const Icon(Icons.refresh_rounded),
+                                    label: Text(_t('doctors_refresh')),
+                                  ),
+                                ],
+                              ),
+                            ),
                           )
                         : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
@@ -325,7 +361,7 @@ class _DoctorListItem extends StatelessWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: AppTonalButton(
-                  label: 'Записаться',
+                  label: _t('doctors_book'),
                   onPressed: onBook,
                 ),
               ),

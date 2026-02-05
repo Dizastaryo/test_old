@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
-import '../services/mock_data.dart';
 import '../services/api_service.dart';
 import '../models/doctor.dart';
 import '../models/appointment.dart';
+import '../services/lang_service.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_buttons.dart';
 import 'doctors_screen.dart';
+
+String _t(String key) => LangService.getString(key);
 import 'package:intl/intl.dart';
 
 class AppointmentScreen extends StatefulWidget {
@@ -26,6 +28,8 @@ class _AppointmentScreenState extends State<AppointmentScreen>
   TimeOfDay? _selectedTime;
   Doctor? _selectedDoctor;
   String? _selectedService;
+  List<Appointment> _myAppointments = [];
+  bool _loadingAppointments = true;
 
   final List<String> _services = [
     'Консультация',
@@ -39,6 +43,41 @@ class _AppointmentScreenState extends State<AppointmentScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _selectedDoctor = widget.selectedDoctor;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadMyAppointments());
+  }
+
+  Future<void> _loadMyAppointments() async {
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    final user = appProvider.currentUser;
+    if (user == null) {
+      if (mounted) setState(() => _loadingAppointments = false);
+      return;
+    }
+    final userId = int.tryParse(user.id);
+    if (userId == null) {
+      if (mounted) setState(() => _loadingAppointments = false);
+      return;
+    }
+    try {
+      Map<String, dynamic>? patient = await ApiService.medkGetPatientByUser(userId);
+      patient ??= await ApiService.medkEnsurePatient(userId: userId, fullName: user.name);
+      final patientId = patient['id'] is int ? patient['id'] as int : int.tryParse(patient['id']?.toString() ?? '');
+      if (patientId == null) {
+        if (mounted) setState(() => _loadingAppointments = false);
+        return;
+      }
+      final list = await ApiService.medkListAppointments(patientId: patientId);
+      if (mounted) {
+        setState(() {
+          _myAppointments = list
+              .map((e) => Appointment.fromMedkJson(Map<String, dynamic>.from(e as Map), userId: user.id))
+              .toList();
+          _loadingAppointments = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadingAppointments = false);
+    }
   }
 
   @override
@@ -67,8 +106,8 @@ class _AppointmentScreenState extends State<AppointmentScreen>
     if (_selectedDate == null || _selectedTime == null ||
         _selectedDoctor == null || _selectedService == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Пожалуйста, заполните все поля'),
+        SnackBar(
+          content: Text(_t('appointment_fill_all')),
           backgroundColor: Colors.red,
         ),
       );
@@ -116,9 +155,9 @@ class _AppointmentScreenState extends State<AppointmentScreen>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Запись подтверждена'),
+        title: Text(_t('appointment_confirmed')),
         content: Text(
-          'Вы записаны на:\n'
+          '${_t('appointment_confirmed_msg')}\n'
           '${DateFormat('dd.MM.yyyy').format(appointmentDateTime)} '
           'в ${_selectedTime!.format(context)}\n'
           'Врач: ${_selectedDoctor!.name}\n'
@@ -135,7 +174,7 @@ class _AppointmentScreenState extends State<AppointmentScreen>
               });
               _tabController.animateTo(1);
             },
-            child: const Text('ОК'),
+            child: Text(_t('appointment_ok')),
           ),
         ],
       ),
@@ -154,13 +193,13 @@ class _AppointmentScreenState extends State<AppointmentScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Запись на приём'),
+        title: Text(_t('appointment_title')),
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          tabs: const [
-            Tab(text: 'Новая запись'),
-            Tab(text: 'Мои записи'),
+          tabs: [
+            Tab(text: _t('appointment_new')),
+            Tab(text: _t('appointment_my')),
           ],
         ),
       ),
@@ -198,7 +237,7 @@ class _AppointmentScreenState extends State<AppointmentScreen>
                 const SizedBox(width: AppTokens.md),
                 Expanded(
                   child: Text(
-                    'Выберите удобную дату и время для записи',
+                    _t('appointment_select_date_time'),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface,
                     ),
@@ -209,7 +248,7 @@ class _AppointmentScreenState extends State<AppointmentScreen>
           ),
           const SizedBox(height: AppTokens.xl),
           Text(
-            'Врач',
+            _t('appointment_doctor'),
             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppTokens.md),
@@ -246,7 +285,7 @@ class _AppointmentScreenState extends State<AppointmentScreen>
                   const SizedBox(width: AppTokens.md),
                   Expanded(
                     child: Text(
-                      _selectedDoctor?.name ?? 'Выберите врача',
+                      _selectedDoctor?.name ?? _t('appointment_select_doctor'),
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: _selectedDoctor != null
                             ? theme.colorScheme.onSurface
@@ -275,12 +314,12 @@ class _AppointmentScreenState extends State<AppointmentScreen>
           ],
           const SizedBox(height: AppTokens.xl),
           Text(
-            'Дата и время',
+            _t('appointment_date_time'),
             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppTokens.sm),
           Text(
-            'Зелёный — свободно, красный — занято',
+            _t('appointment_slots_hint'),
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -303,7 +342,7 @@ class _AppointmentScreenState extends State<AppointmentScreen>
                   Expanded(
                     child: Text(
                       _selectedDate == null || _selectedTime == null
-                          ? 'Выберите дату и время'
+                          ? _t('appointment_select_slot')
                           : '${DateFormat('dd.MM.yyyy').format(_selectedDate!)} в ${_selectedTime!.format(context)}',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: _selectedDate == null
@@ -320,7 +359,7 @@ class _AppointmentScreenState extends State<AppointmentScreen>
           ),
           const SizedBox(height: AppTokens.xl),
           Text(
-            'Услуга',
+            _t('appointment_service'),
             style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: AppTokens.md),
@@ -335,7 +374,7 @@ class _AppointmentScreenState extends State<AppointmentScreen>
               value: _selectedService,
               isExpanded: true,
               underline: const SizedBox(),
-              hint: const Text('Выберите услугу'),
+              hint: Text(_t('appointment_select_service')),
               items: _services.map((service) {
                 return DropdownMenuItem(
                   value: service,
@@ -351,7 +390,7 @@ class _AppointmentScreenState extends State<AppointmentScreen>
           ),
           const SizedBox(height: AppTokens.xxl),
           AppPrimaryButton(
-            label: 'Записаться',
+            label: _t('appointment_book_btn'),
             onPressed: _submitAppointment,
           ),
         ],
@@ -360,23 +399,25 @@ class _AppointmentScreenState extends State<AppointmentScreen>
   }
 
   Widget _buildMyAppointmentsTab() {
-    final appProvider = Provider.of<AppProvider>(context);
-    final userId = appProvider.currentUser?.id ?? 'user_1';
-    final appointments = MockData.getAppointments(userId);
-
-    if (appointments.isEmpty) {
+    if (_loadingAppointments) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_myAppointments.isEmpty) {
       return const Center(
-        child: Text('У вас нет записей'),
+        child: Text(_t('appointment_no_records')),
       );
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(AppTokens.lg),
-      itemCount: appointments.length,
-      itemBuilder: (context, index) {
-        final appointment = appointments[index];
-        return _AppointmentCard(appointment: appointment);
-      },
+    return RefreshIndicator(
+      onRefresh: _loadMyAppointments,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(AppTokens.lg),
+        itemCount: _myAppointments.length,
+        itemBuilder: (context, index) {
+          final appointment = _myAppointments[index];
+          return _AppointmentCard(appointment: appointment);
+        },
+      ),
     );
   }
 }
@@ -534,7 +575,7 @@ class _CalendarTimePickerScreenState extends State<CalendarTimePickerScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Выберите дату и время'),
+        title: Text(_t('appointment_select_date_time_title')),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -553,7 +594,7 @@ class _CalendarTimePickerScreenState extends State<CalendarTimePickerScreen> {
                       children: [
                         Text(_error!, textAlign: TextAlign.center),
                         const SizedBox(height: 16),
-                        ElevatedButton(onPressed: _loadAppointments, child: const Text('Повторить')),
+                        ElevatedButton(onPressed: _loadAppointments, child: Text(_t('doctors_retry'))),
                       ],
                     ),
                   ),
@@ -564,12 +605,12 @@ class _CalendarTimePickerScreenState extends State<CalendarTimePickerScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Календарь',
+                        _t('appointment_calendar'),
                         style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Зелёный — есть свободные слоты, красный — день занят',
+                        _t('appointment_calendar_hint'),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -579,16 +620,16 @@ class _CalendarTimePickerScreenState extends State<CalendarTimePickerScreen> {
                       if (_selectedDay != null) ...[
                         const SizedBox(height: 24),
                         Text(
-                          'Время на ${DateFormat('dd.MM.yyyy').format(_selectedDay!)}',
+                          '${_t('appointment_time_on')}${DateFormat('dd.MM.yyyy').format(_selectedDay!)}',
                           style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Зелёный — свободно, красный — занято',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
+                          _t('appointment_slots_hint'),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
                         ),
+                      ),
                         const SizedBox(height: 12),
                         _buildTimeSlots(theme),
                       ],
@@ -709,9 +750,9 @@ class _AppointmentCard extends StatelessWidget {
       'cancelled': AppTokens.error,
     };
     final statusNames = {
-      'scheduled': 'Подтверждена',
-      'completed': 'Завершено',
-      'cancelled': 'Отменена',
+      'scheduled': _t('appointment_status_scheduled'),
+      'completed': _t('appointment_status_completed'),
+      'cancelled': _t('appointment_status_cancelled'),
     };
 
     return Card(
@@ -784,7 +825,7 @@ class _AppointmentCard extends StatelessWidget {
             if (appointment.notes != null) ...[
               const SizedBox(height: AppTokens.sm),
               Text(
-                'Примечание: ${appointment.notes}',
+                '${_t('appointment_note')}${appointment.notes}',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

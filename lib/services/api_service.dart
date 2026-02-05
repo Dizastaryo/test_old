@@ -144,9 +144,23 @@ class ApiService {
   /// GET /api/v1/medk/doctors — список врачей для пациентов (без токена)
   static Future<List<dynamic>> medkListDoctors() async {
     final r = await http.get(Uri.parse('$baseUrl/api/v1/medk/doctors'), headers: _headers());
-    final data = jsonDecode(r.body is String ? r.body : '[]');
-    if (r.statusCode >= 400) throw ApiException(r.statusCode, r.body);
-    return data is List ? data : [];
+    if (r.statusCode >= 400) {
+      throw ApiException(r.statusCode, r.body is String ? r.body : 'Ошибка загрузки врачей');
+    }
+    final raw = r.body is String ? r.body : '[]';
+    if (raw.trim().isEmpty) return [];
+    dynamic data;
+    try {
+      data = jsonDecode(raw);
+    } catch (_) {
+      return [];
+    }
+    if (data is List) return data;
+    if (data is Map<String, dynamic>) {
+      if (data['data'] is List) return data['data'] as List;
+      if (data['doctors'] is List) return data['doctors'] as List;
+    }
+    return [];
   }
 
   /// GET /api/v1/medk/doctors/by-user/{user_id} — карточка врача по user_id
@@ -257,6 +271,18 @@ class ApiService {
     );
     final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
     if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+    return data;
+  }
+
+  /// GET /api/v1/medk/patients/by-user/{user_id} — пациент по user_id (без создания)
+  static Future<Map<String, dynamic>?> medkGetPatientByUser(int userId) async {
+    final r = await http.get(
+      Uri.parse('$baseUrl/api/v1/medk/patients/by-user/$userId'),
+      headers: _headers(),
+    );
+    if (r.statusCode == 404 || r.body == 'null' || (r.body.isEmpty)) return null;
+    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>?;
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data?['detail']?.toString() ?? r.body);
     return data;
   }
 

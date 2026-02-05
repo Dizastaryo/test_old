@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../services/api_service.dart';
+import '../services/lang_service.dart';
 import '../theme/app_tokens.dart';
+
+String _t(String key) => LangService.getString(key);
 
 /// Экран редактирования карточки врача: имя, специальность, описание, услуги.
 class DoctorProfileEditScreen extends StatefulWidget {
@@ -47,7 +50,7 @@ class _DoctorProfileEditScreenState extends State<DoctorProfileEditScreen> {
     if (userId == null) {
       setState(() {
         _loading = false;
-        _loadError = 'Пользователь не найден';
+        _loadError = _t('doctor_card_user_not_found');
       });
       return;
     }
@@ -83,7 +86,7 @@ class _DoctorProfileEditScreenState extends State<DoctorProfileEditScreen> {
     final token = appProvider.accessToken;
     if (token == null || token.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Нужна авторизация')),
+        SnackBar(content: Text(_t('doctor_card_auth_required'))),
       );
       return;
     }
@@ -103,7 +106,7 @@ class _DoctorProfileEditScreenState extends State<DoctorProfileEditScreen> {
       if (mounted) {
         setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Карточка врача сохранена'), backgroundColor: AppTokens.success),
+          SnackBar(content: Text(_t('doctor_card_saved')), backgroundColor: AppTokens.success),
         );
         Navigator.of(context).pop();
       }
@@ -121,13 +124,13 @@ class _DoctorProfileEditScreenState extends State<DoctorProfileEditScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Карточка врача'), elevation: 0),
+        appBar: AppBar(title: Text(_t('doctor_card_title')), elevation: 0),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (_loadError != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Карточка врача'), elevation: 0),
+        appBar: AppBar(title: Text(_t('doctor_card_title')), elevation: 0),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(AppTokens.lg),
@@ -145,7 +148,7 @@ class _DoctorProfileEditScreenState extends State<DoctorProfileEditScreen> {
                     _loadProfile();
                   },
                   icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('Повторить'),
+                  label: Text(_t('doctors_retry')),
                 ),
               ],
             ),
@@ -155,12 +158,12 @@ class _DoctorProfileEditScreenState extends State<DoctorProfileEditScreen> {
     }
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Карточка врача'),
+        title: Text(_t('doctor_card_title')),
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _saving ? null : _save,
-            child: _saving ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Сохранить'),
+            child: _saving ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)) : Text(_t('profile_save')),
           ),
         ],
       ),
@@ -173,26 +176,26 @@ class _DoctorProfileEditScreenState extends State<DoctorProfileEditScreen> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(
-                  labelText: 'ФИО',
-                  hintText: 'Как отображать в карточке',
+                decoration: InputDecoration(
+                  labelText: _t('doctor_card_fio'),
+                  hintText: _t('doctor_card_fio_hint'),
                 ),
               ),
               const SizedBox(height: AppTokens.lg),
               TextFormField(
                 controller: _specialtyController,
-                decoration: const InputDecoration(
-                  labelText: 'Специальность',
-                  hintText: 'Терапевт, Кардиолог, ...',
+                decoration: InputDecoration(
+                  labelText: _t('doctor_card_specialty'),
+                  hintText: _t('doctor_card_specialty_hint'),
                 ),
               ),
               const SizedBox(height: AppTokens.lg),
               TextFormField(
                 controller: _descriptionController,
                 maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'О себе',
-                  hintText: 'Краткое описание для пациентов',
+                decoration: InputDecoration(
+                  labelText: _t('doctor_card_about'),
+                  hintText: _t('doctor_card_about_hint'),
                   alignLabelWithHint: true,
                 ),
               ),
@@ -200,9 +203,9 @@ class _DoctorProfileEditScreenState extends State<DoctorProfileEditScreen> {
               TextFormField(
                 controller: _servicesController,
                 maxLines: 2,
-                decoration: const InputDecoration(
-                  labelText: 'Услуги',
-                  hintText: 'Через запятую: Консультация, Осмотр, Диагностика',
+                decoration: InputDecoration(
+                  labelText: _t('doctor_card_services'),
+                  hintText: _t('doctor_card_services_hint'),
                   alignLabelWithHint: true,
                 ),
               ),
