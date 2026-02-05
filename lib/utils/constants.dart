@@ -22,6 +22,8 @@ class AppConstants {
   static const String keyTheme = 'theme';
   static const String keyOnboardingCompleted = 'onboarding_completed';
 
-  // API (бэкенд back_k). Для Android-эмулятора: http://10.0.2.2:8000
-  static const String apiBaseUrl = 'http://localhost:8000';
+  // API (бэкенд back_k).
+  // Локальная сеть: сервер на 192.168.8.37:8000
+  // Для Android-эмулятора: http://10.0.2.2:8000
+  static const String apiBaseUrl = 'http://192.168.8.37:8000';
 }
