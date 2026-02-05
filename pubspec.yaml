@@ -22,8 +22,8 @@ dependencies:
   # Local storage
   shared_preferences: ^2.2.2
 
-  # Intl (версия закреплена flutter_localizations из Flutter SDK)
-  intl: ^0.18.1
+  # Intl (закреплена flutter_localizations из Flutter SDK)
+  intl: ^0.20.2
 
   # URL launcher
   url_launcher: ^6.2.4
