@@ -20,13 +20,8 @@ jobs:
       - name: Flutter doctor
         run: flutter doctor -v
 
-      # flutter pub get создаёт ios/Flutter/Generated.xcconfig для pod install; игнорируем exit 1 из-за предупреждения embedding
       - name: Get dependencies
-        run: flutter pub get || true
-
-      - name: Dependency status (compact)
-        run: flutter pub outdated
-        continue-on-error: true
+        run: flutter pub get
 
       - name: Install CocoaPods dependencies
         run: |
