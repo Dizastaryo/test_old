@@ -84,20 +84,22 @@ class DoctorDetailScreen extends StatelessWidget {
             const SizedBox(height: AppTokens.xl),
 
             // О враче
-            Text(
-              'О враче',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+            if (doctor.description.isNotEmpty) ...[
+              Text(
+                'О враче',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(height: AppTokens.sm),
-            Text(
-              doctor.description,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: AppTokens.xl),
+              const SizedBox(height: AppTokens.sm),
+              Text(
+                doctor.description,
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: AppTokens.xl),
+            ],
 
-            // Услуги (мок)
+            // Услуги (из профиля врача или по умолчанию)
             Text(
               'Услуги',
               style: theme.textTheme.titleMedium?.copyWith(
@@ -108,15 +110,15 @@ class DoctorDetailScreen extends StatelessWidget {
             Wrap(
               spacing: AppTokens.sm,
               runSpacing: AppTokens.sm,
-              children: [
-                _Chip(label: 'Консультация'),
-                _Chip(label: 'Осмотр'),
-                _Chip(label: 'Диагностика'),
-              ],
+              children: (doctor.services.isNotEmpty
+                      ? doctor.services
+                      : ['Консультация', 'Осмотр', 'Диагностика'])
+                  .map((label) => _Chip(label: label))
+                  .toList(),
             ),
             const SizedBox(height: AppTokens.xl),
 
-            // Расписание (мок)
+            // Расписание
             Text(
               'Ближайшие слоты',
               style: theme.textTheme.titleMedium?.copyWith(

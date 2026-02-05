@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../services/mock_data.dart';
+import '../services/api_service.dart';
 import '../models/promotion.dart';
 import '../models/appointment.dart';
 import '../models/doctor.dart';
@@ -14,8 +15,32 @@ import 'doctors_screen.dart';
 import 'contact_screen.dart';
 import 'package:intl/intl.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  List<Doctor> _doctors = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDoctors();
+  }
+
+  Future<void> _loadDoctors() async {
+    try {
+      final list = await ApiService.medkListDoctors();
+      if (mounted) {
+        setState(() {
+          _doctors = list.map((e) => Doctor.fromMedkJson(Map<String, dynamic>.from(e as Map))).toList();
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,15 +197,17 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: AppTokens.md),
                 SizedBox(
                   height: 128,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
-                    itemCount: MockData.getDoctors().take(4).length,
-                    itemBuilder: (context, index) {
-                      final doctor = MockData.getDoctors()[index];
-                      return _DoctorMiniCard(doctor: doctor);
-                    },
-                  ),
+                  child: _doctors.isEmpty
+                      ? const Center(child: Text('Загрузка врачей...'))
+                      : ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
+                          itemCount: _doctors.length > 4 ? 4 : _doctors.length,
+                          itemBuilder: (context, index) {
+                            final doctor = _doctors[index];
+                            return _DoctorMiniCard(doctor: doctor);
+                          },
+                        ),
                 ),
                 const SizedBox(height: AppTokens.xl),
 

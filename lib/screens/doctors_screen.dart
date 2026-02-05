@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/mock_data.dart';
 import '../models/doctor.dart';
+import '../services/api_service.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_buttons.dart';
 import 'appointment_screen.dart';
@@ -18,13 +18,40 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
   List<Doctor> _filteredDoctors = [];
   String _selectedSpecialization = 'Все';
   final TextEditingController _searchController = TextEditingController();
+  bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _doctors = MockData.getDoctors();
-    _applyFilters();
     _searchController.addListener(() => setState(_applyFilters));
+    _loadDoctors();
+  }
+
+  Future<void> _loadDoctors() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final list = await ApiService.medkListDoctors();
+      if (mounted) {
+        setState(() {
+          _doctors = list.map((e) => Doctor.fromMedkJson(Map<String, dynamic>.from(e as Map))).toList();
+          _loading = false;
+          _applyFilters();
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = e.toString().replaceFirst('ApiException: ', '');
+          _doctors = [];
+          _filteredDoctors = [];
+        });
+      }
+    }
   }
 
   @override
@@ -49,7 +76,7 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
       list = list.where((d) =>
           d.name.toLowerCase().contains(q) ||
           d.specialization.toLowerCase().contains(q) ||
-          d.description.toLowerCase().contains(q)).toList();
+          (d.description.isNotEmpty && d.description.toLowerCase().contains(q))).toList();
     }
     _filteredDoctors = list;
   }
@@ -115,11 +142,31 @@ class _DoctorsScreenState extends State<DoctorsScreen> {
           const SizedBox(height: AppTokens.sm),
           // Список врачей
           Expanded(
-            child: _filteredDoctors.isEmpty
-                ? const Center(
-                    child: Text('Врачи не найдены'),
-                  )
-                : ListView.builder(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppTokens.lg),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_error!, textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
+                              const SizedBox(height: AppTokens.md),
+                              TextButton.icon(
+                                onPressed: _loadDoctors,
+                                icon: const Icon(Icons.refresh_rounded),
+                                label: const Text('Повторить'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : _filteredDoctors.isEmpty
+                        ? const Center(
+                            child: Text('Врачи не найдены'),
+                          )
+                        : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: AppTokens.lg),
                     itemCount: _filteredDoctors.length,
                     itemBuilder: (context, index) {
@@ -233,35 +280,42 @@ class _DoctorListItem extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: AppTokens.sm),
-                        Text(
-                          doctor.description,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                        if (doctor.description.isNotEmpty) ...[
+                          const SizedBox(height: AppTokens.sm),
+                          Text(
+                            doctor.description,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        ],
                         const SizedBox(height: AppTokens.sm),
-                        Row(
-                          children: [
-                            Icon(Icons.star_rounded, size: 18, color: AppTokens.warning),
-                            const SizedBox(width: AppTokens.xs),
-                            Text(
-                              doctor.rating.toStringAsFixed(1),
-                              style: theme.textTheme.bodySmall,
-                            ),
-                            const SizedBox(width: AppTokens.lg),
-                            Icon(Icons.work_rounded, size: 18, color: theme.colorScheme.outline),
-                            const SizedBox(width: AppTokens.xs),
-                            Text(
-                              '${doctor.experienceYears} лет опыта',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
+                        if (doctor.rating > 0 || doctor.experienceYears > 0)
+                          Row(
+                            children: [
+                              if (doctor.rating > 0) ...[
+                                Icon(Icons.star_rounded, size: 18, color: AppTokens.warning),
+                                const SizedBox(width: AppTokens.xs),
+                                Text(
+                                  doctor.rating.toStringAsFixed(1),
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ],
+                              if (doctor.rating > 0 && doctor.experienceYears > 0) const SizedBox(width: AppTokens.lg),
+                              if (doctor.experienceYears > 0) ...[
+                                Icon(Icons.work_rounded, size: 18, color: theme.colorScheme.outline),
+                                const SizedBox(width: AppTokens.xs),
+                                Text(
+                                  '${doctor.experienceYears} лет опыта',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                       ],
                     ),
                   ),

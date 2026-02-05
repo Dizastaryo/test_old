@@ -1,71 +1,10 @@
 import '../models/user.dart';
-import '../models/doctor.dart';
 import '../models/appointment.dart';
 import '../models/notification_model.dart';
 import '../models/medical_record.dart';
 import '../models/promotion.dart';
 
 class MockData {
-  // Моковые врачи
-  static List<Doctor> getDoctors() {
-    return [
-      Doctor(
-        id: '1',
-        name: 'Доктор Айбек Нурланов',
-        specialization: 'Терапевт',
-        description: 'Опытный терапевт с 15-летним стажем. Специализируется на лечении заболеваний внутренних органов.',
-        rating: 4.8,
-        experienceYears: 15,
-        languages: ['Қазақша', 'Русский', 'English'],
-      ),
-      Doctor(
-        id: '2',
-        name: 'Доктор Алия Смагулова',
-        specialization: 'Кардиолог',
-        description: 'Врач-кардиолог высшей категории. Эксперт в области диагностики и лечения сердечно-сосудистых заболеваний.',
-        rating: 4.9,
-        experienceYears: 12,
-        languages: ['Қазақша', 'Русский'],
-      ),
-      Doctor(
-        id: '3',
-        name: 'Доктор Нурлан Касымов',
-        specialization: 'Невролог',
-        description: 'Специалист по заболеваниям нервной системы. Лечение головных болей, мигреней, неврологических расстройств.',
-        rating: 4.7,
-        experienceYears: 10,
-        languages: ['Қазақша', 'Русский', 'English'],
-      ),
-      Doctor(
-        id: '4',
-        name: 'Доктор Мадина Абдуллаева',
-        specialization: 'Педиатр',
-        description: 'Детский врач с большим опытом работы. Специализируется на лечении детей всех возрастов.',
-        rating: 4.9,
-        experienceYears: 8,
-        languages: ['Қазақша', 'Русский'],
-      ),
-      Doctor(
-        id: '5',
-        name: 'Доктор Ерлан Токтаров',
-        specialization: 'Хирург',
-        description: 'Хирург общей практики. Выполняет операции различной сложности.',
-        rating: 4.6,
-        experienceYears: 18,
-        languages: ['Қазақша', 'Русский'],
-      ),
-      Doctor(
-        id: '6',
-        name: 'Доктор Айгуль Нуржанова',
-        specialization: 'Гинеколог',
-        description: 'Врач-гинеколог с опытом работы более 10 лет. Специализируется на женском здоровье.',
-        rating: 4.8,
-        experienceYears: 11,
-        languages: ['Қазақша', 'Русский'],
-      ),
-    ];
-  }
-
   // Моковые записи
   static List<Appointment> getAppointments(String userId) {
     final now = DateTime.now();

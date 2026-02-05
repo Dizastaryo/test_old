@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_provider.dart';
 import '../models/user.dart';
@@ -9,6 +10,7 @@ import 'auth_screen.dart';
 import 'notifications_screen.dart';
 import 'contact_screen.dart';
 import 'medical_history_screen.dart';
+import 'doctor_profile_edit_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -60,12 +62,22 @@ class ProfileScreen extends StatelessWidget {
         slivers: [
           HeroHeader(
             expandedHeight: 200,
-            title: user.name,
+            title: '',
+            centerTitle: true,
             child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const SizedBox(height: 40),
+                  Text(
+                    user.name,
+                    style: GoogleFonts.manrope(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
                   Container(
                     width: 80,
                     height: 80,
@@ -104,6 +116,21 @@ class ProfileScreen extends StatelessWidget {
                           );
                         },
                       ),
+                      if (user.isDoctor) ...[
+                        const Divider(height: 1),
+                        _ProfileMenuItem(
+                          icon: Icons.medical_services_rounded,
+                          title: 'Карточка врача',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const DoctorProfileEditScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                       const Divider(height: 1),
                       _ProfileMenuItem(
                         icon: Icons.folder_rounded,

@@ -141,6 +141,49 @@ class ApiService {
     return data;
   }
 
+  /// GET /api/v1/medk/doctors — список врачей для пациентов (без токена)
+  static Future<List<dynamic>> medkListDoctors() async {
+    final r = await http.get(Uri.parse('$baseUrl/api/v1/medk/doctors'), headers: _headers());
+    final data = jsonDecode(r.body is String ? r.body : '[]');
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, r.body);
+    return data is List ? data : [];
+  }
+
+  /// GET /api/v1/medk/doctors/by-user/{user_id} — карточка врача по user_id
+  static Future<Map<String, dynamic>?> medkGetDoctorByUser(int userId) async {
+    final r = await http.get(
+      Uri.parse('$baseUrl/api/v1/medk/doctors/by-user/$userId'),
+      headers: _headers(),
+    );
+    if (r.statusCode == 404 || r.body == 'null' || r.body.isEmpty) return null;
+    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>?;
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data?['detail']?.toString() ?? r.body);
+    return data;
+  }
+
+  /// PATCH /api/v1/medk/doctors/me — обновить профиль врача (описание, услуги)
+  static Future<Map<String, dynamic>> medkUpdateDoctorProfile(
+    String token, {
+    String? fullName,
+    String? specialty,
+    String? description,
+    List<String>? services,
+  }) async {
+    final body = <String, dynamic>{};
+    if (fullName != null) body['full_name'] = fullName;
+    if (specialty != null) body['specialty'] = specialty;
+    if (description != null) body['description'] = description;
+    if (services != null) body['services'] = services;
+    final r = await http.patch(
+      Uri.parse('$baseUrl/api/v1/medk/doctors/me'),
+      headers: _headers(token: token),
+      body: jsonEncode(body),
+    );
+    final data = jsonDecode(r.body is String ? r.body : '{}') as Map<String, dynamic>? ?? {};
+    if (r.statusCode >= 400) throw ApiException(r.statusCode, data['detail']?.toString() ?? r.body);
+    return data;
+  }
+
   /// POST /medk/doctors/ensure — получить или создать врача (user_id для заглушки можно 1)
   static Future<Map<String, dynamic>> medkEnsureDoctor({required int userId, String fullName = ''}) async {
     final r = await http.post(
