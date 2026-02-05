@@ -284,6 +284,7 @@ class ApiService {
   }
 
   /// POST /api/v1/medk/test/run-reminders-now — тестовый запуск напоминалок за текущий час (для врача).
+  /// Возвращает sent_count, message, hour, skipped_no_phone, skipped_no_message.
   static Future<Map<String, dynamic>> medkTestRunRemindersNow() async {
     final r = await http.post(
       Uri.parse('$baseUrl/api/v1/medk/test/run-reminders-now'),

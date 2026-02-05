@@ -159,6 +159,9 @@
     "doctor_retry": "Қайталау",
     "doctor_remind_test_ok": "Ағымдағы сағаттың еске салулары іске қосылды. WhatsApp-ты тексеріңіз.",
     "doctor_remind_test_fail": "Еске салуларды іске қосу қатесі",
+    "doctor_remind_plan_title": "Күннің еске салу жоспары",
+    "doctor_remind_at_time": "%s уақытта WhatsApp-та:",
+    "doctor_remind_plan_empty": "Еске салу кестесі бар науқастар жоқ (создық аурулар + тапсырмалармен аяқталған қабылдау).",
     "home_doctor_today": "Бүгін",
     "home_doctor_appointments_count": "қабылдау",
     "home_doctor_go_appointments": "Қабылдауларға өту"

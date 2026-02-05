@@ -159,6 +159,9 @@
     "doctor_retry": "Повторить",
     "doctor_remind_test_ok": "Напоминалки за текущий час запущены. Проверьте WhatsApp.",
     "doctor_remind_test_fail": "Ошибка запуска напоминалок",
+    "doctor_remind_plan_title": "План напоминаний на день",
+    "doctor_remind_at_time": "В %s в WhatsApp:",
+    "doctor_remind_plan_empty": "Нет пациентов с расписанием напоминаний (хронические болезни + завершённый приём с назначениями).",
     "home_doctor_today": "На сегодня",
     "home_doctor_appointments_count": "приёмов",
     "home_doctor_go_appointments": "Перейти к приёмам"
