@@ -21,7 +21,7 @@ jobs:
         run: flutter doctor -v
 
       - name: Get dependencies
-        run: flutter pub get
+        run: flutter pub get --ignore-deprecation
 
       - name: Dependency status (compact)
         run: flutter pub outdated

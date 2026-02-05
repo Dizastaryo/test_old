@@ -3,13 +3,10 @@
         android:label="Qamqor Clinic"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
-        <!-- Android embedding v2 (file_picker and other plugins). Both keys for tool/plugin compatibility. -->
-        <meta-data
-            android:name="io.flutter.embedding.android.FlutterEmbedding"
-            android:value="2" />
+        <!-- Android embedding v2 - required by file_picker and other plugins. -->
         <meta-data
             android:name="flutterEmbedding"
-            android:value="2" />
+            android:value="2"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"
