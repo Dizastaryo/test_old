@@ -31,8 +31,8 @@ dependencies:
   # HTTP API
   http: ^1.2.0
 
-  # Выбор файлов (PDF для документов)
-  file_picker: ^8.0.0+1
+  # Выбор файлов (PDF для документов). 6.x совместим с Dart 3 и может не требовать embedding v2 в CI
+  file_picker: ^6.1.0
 
   # Typography (совместимо с Flutter SDK 3.19.0)
   google_fonts: ^6.1.0
