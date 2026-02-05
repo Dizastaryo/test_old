@@ -4,8 +4,6 @@ import '../providers/app_provider.dart';
 import '../services/api_service.dart';
 import '../services/lang_service.dart';
 import '../models/promotion.dart';
-
-String _t(String key) => LangService.getString(key);
 import '../models/appointment.dart';
 import '../models/doctor.dart';
 import '../theme/app_tokens.dart';
@@ -16,6 +14,8 @@ import 'medical_history_screen.dart';
 import 'doctors_screen.dart';
 import 'contact_screen.dart';
 import 'package:intl/intl.dart';
+
+String _t(String key) => LangService.getString(key);
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

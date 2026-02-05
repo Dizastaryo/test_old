@@ -4,10 +4,10 @@ import '../services/api_service.dart';
 import '../services/lang_service.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_buttons.dart';
-
-String _t(String key) => LangService.getString(key);
 import 'appointment_screen.dart';
 import 'doctor_detail_screen.dart';
+
+String _t(String key) => LangService.getString(key);
 
 class DoctorsScreen extends StatefulWidget {
   const DoctorsScreen({super.key});

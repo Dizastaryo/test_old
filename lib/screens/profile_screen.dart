@@ -7,14 +7,14 @@ import '../services/lang_service.dart';
 import '../theme/app_tokens.dart';
 
 import '../widgets/hero_header.dart';
-
-String _t(String key) => LangService.getString(key);
 import '../widgets/app_buttons.dart';
 import 'auth_screen.dart';
 import 'notifications_screen.dart';
 import 'contact_screen.dart';
 import 'medical_history_screen.dart';
 import 'doctor_profile_edit_screen.dart';
+
+String _t(String key) => LangService.getString(key);
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});

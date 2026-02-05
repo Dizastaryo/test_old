@@ -8,9 +8,9 @@ import '../services/lang_service.dart';
 import '../theme/app_tokens.dart';
 import '../widgets/app_buttons.dart';
 import 'doctors_screen.dart';
+import 'package:intl/intl.dart';
 
 String _t(String key) => LangService.getString(key);
-import 'package:intl/intl.dart';
 
 class AppointmentScreen extends StatefulWidget {
   final Doctor? selectedDoctor;
@@ -403,7 +403,7 @@ class _AppointmentScreenState extends State<AppointmentScreen>
       return const Center(child: CircularProgressIndicator());
     }
     if (_myAppointments.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(_t('appointment_no_records')),
       );
     }

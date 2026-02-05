@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/doctor.dart';
 import '../services/lang_service.dart';
 import '../theme/app_tokens.dart';
+import '../widgets/app_buttons.dart';
 
 String _t(String key) => LangService.getString(key);
-import '../widgets/app_buttons.dart';
 
 /// Экран детальной информации о враче: фото, о враче, услуги, расписание, CTA «Записаться».
 class DoctorDetailScreen extends StatelessWidget {
