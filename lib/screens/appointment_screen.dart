@@ -192,12 +192,16 @@ class _AppointmentScreenState extends State<AppointmentScreen>
   @override
   Widget build(BuildContext context) {
     Provider.of<AppProvider>(context); // перестройка при смене языка
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Text(_t('appointment_title')),
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: cs.onPrimary,
+          labelColor: cs.onPrimary,
+          unselectedLabelColor: cs.onPrimary.withOpacity(0.8),
           tabs: [
             Tab(text: _t('appointment_new')),
             Tab(text: _t('appointment_my')),

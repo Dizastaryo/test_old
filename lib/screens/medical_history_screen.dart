@@ -156,6 +156,7 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: const Text('История посещений'),
@@ -168,6 +169,9 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: cs.onPrimary,
+          labelColor: cs.onPrimary,
+          unselectedLabelColor: cs.onPrimary.withOpacity(0.8),
           tabs: const [
             Tab(icon: Icon(Icons.medical_services_rounded), text: 'Визиты'),
             Tab(icon: Icon(Icons.science_rounded), text: 'Анализы'),
