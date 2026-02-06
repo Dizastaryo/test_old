@@ -59,9 +59,13 @@ class AppActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final c = color ?? theme.colorScheme.primary;
+    final isDark = theme.brightness == Brightness.dark;
+    final bgColor = isDark ? c.withOpacity(0.2) : c.withOpacity(0.12);
+    final textColor = theme.colorScheme.onSurface;
     return Material(
-      color: c.withOpacity(0.12),
+      color: bgColor,
       borderRadius: BorderRadius.circular(AppTokens.radiusCard),
       child: InkWell(
         onTap: onTap,
@@ -70,7 +74,7 @@ class AppActionCard extends StatelessWidget {
           padding: const EdgeInsets.all(AppTokens.lg),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppTokens.radiusCard),
-            border: Border.all(color: c.withOpacity(0.3)),
+            border: Border.all(color: c.withOpacity(isDark ? 0.4 : 0.3)),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -82,7 +86,7 @@ class AppActionCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: c,
+                  color: textColor,
                 ),
                 textAlign: TextAlign.center,
               ),

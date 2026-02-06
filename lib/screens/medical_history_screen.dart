@@ -184,7 +184,13 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(_error!, textAlign: TextAlign.center),
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
                         const SizedBox(height: 16),
                         ElevatedButton(onPressed: _loadData, child: const Text('Повторить')),
                       ],
@@ -262,8 +268,13 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
 
   Widget _buildVisitsTab() {
     if (_records.isEmpty) {
-      return const Center(
-        child: Text('История посещений пуста'),
+      return Center(
+        child: Text(
+          'История посещений пуста',
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
       );
     }
 
@@ -279,8 +290,13 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen>
 
   Widget _buildAnalysesTab() {
     if (_analyses.isEmpty) {
-      return const Center(
-        child: Text('Анализы не найдены'),
+      return Center(
+        child: Text(
+          'Анализы не найдены',
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
       );
     }
 
@@ -355,12 +371,16 @@ class _VisitCard extends StatelessWidget {
         ),
         title: Text(
           record.doctorName,
-          style: const TextStyle(
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         subtitle: Text(
           dateFormat.format(record.visitDate),
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         children: [
           Padding(
@@ -420,12 +440,16 @@ class _AnalysisCard extends StatelessWidget {
         ),
         title: Text(
           analysis.name,
-          style: const TextStyle(
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         subtitle: Text(
           '${typeNames[analysis.type] ?? analysis.type} • ${dateFormat.format(analysis.date)}',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         children: [
           Padding(
@@ -433,11 +457,11 @@ class _AnalysisCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Результаты:',
-                  style: TextStyle(
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -448,7 +472,10 @@ class _AnalysisCard extends StatelessWidget {
                         children: [
                           Text(
                             entry.key,
-                            style: const TextStyle(fontWeight: FontWeight.w500),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
                           Text(
                             entry.value.toString(),
@@ -505,7 +532,10 @@ class _InfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(fontSize: 14),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
           ),
         ),
       ],

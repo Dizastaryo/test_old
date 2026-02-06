@@ -162,8 +162,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return Scaffold(
-      backgroundColor: Colors.blue.shade50,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -176,24 +178,30 @@ class _AuthScreenState extends State<AuthScreen> {
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade700,
+                    color: cs.primary,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.local_hospital, size: 50, color: Colors.white),
+                  child: Icon(Icons.local_hospital, size: 50, color: cs.onPrimary),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Qamqor Clinic',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue),
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: cs.primary,
+                  ),
                 ),
                 const SizedBox(height: 4),
-                const Text('Частная клиника', style: TextStyle(fontSize: 14, color: Colors.grey)),
+                Text(
+                  'Частная клиника',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                ),
                 const SizedBox(height: 32),
                 if (!_codeSent) ...[
-                  const Text(
+                  Text(
                     'Введите номер телефона. Код подтверждения придёт в WhatsApp.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurface),
                   ),
                   const SizedBox(height: 24),
                   TextFormField(
@@ -205,7 +213,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       prefixIcon: const Icon(Icons.phone_rounded),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: cs.surface,
                     ),
                     validator: (v) {
                       final digits = (v ?? '').replaceAll(RegExp(r'\D'), '');
@@ -222,8 +230,8 @@ class _AuthScreenState extends State<AuthScreen> {
                       child: OutlinedButton(
                         onPressed: _isLoading ? null : _loginAsAdmin,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.blue.shade700,
-                          side: BorderSide(color: Colors.blue.shade700),
+                          foregroundColor: cs.primary,
+                          side: BorderSide(color: cs.primary),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         child: _isLoading
@@ -239,31 +247,31 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _requestOtp,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade700,
-                        foregroundColor: Colors.white,
+                        backgroundColor: cs.primary,
+                        foregroundColor: cs.onPrimary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 24,
                               height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
                             )
                           : const Text('Получить код'),
                     ),
                   ),
                 ] else ...[
-                  const Text(
+                  Text(
                     'Введите код из WhatsApp',
                     textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: Colors.black87),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurface),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     _phoneController.text.trim().isEmpty
                         ? ''
                         : 'Номер: ${_phoneController.text.trim()}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                    style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                   ),
                   const SizedBox(height: 24),
                   TextFormField(
@@ -276,7 +284,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       prefixIcon: const Icon(Icons.sms_rounded),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: cs.surface,
                       counterText: '',
                     ),
                   ),
@@ -287,15 +295,15 @@ class _AuthScreenState extends State<AuthScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _verifyAndLogin,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade700,
-                        foregroundColor: Colors.white,
+                        backgroundColor: cs.primary,
+                        foregroundColor: cs.onPrimary,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 24,
                               height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
                             )
                           : const Text('Войти'),
                     ),
@@ -303,7 +311,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   const SizedBox(height: 16),
                   TextButton(
                     onPressed: _isLoading ? null : _backToPhone,
-                    child: const Text('Изменить номер'),
+                    child: Text('Изменить номер', style: TextStyle(color: cs.primary)),
                   ),
                 ],
               ],

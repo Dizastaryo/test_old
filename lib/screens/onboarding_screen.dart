@@ -29,11 +29,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       title: 'История и анализы',
       body: 'Все визиты и результаты анализов в одном месте. Удобно и понятно.',
     ),
-    _OnboardingPage(
-      icon: Icons.smart_toy_rounded,
-      title: 'Чат-помощник',
-      body: 'Ответы на вопросы о клинике, записи и подготовке к анализам — в чате.',
-    ),
   ];
 
   void _next() {

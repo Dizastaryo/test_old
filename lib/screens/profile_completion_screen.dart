@@ -83,12 +83,14 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     return Scaffold(
-      backgroundColor: Colors.blue.shade50,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Заполните профиль'),
-        backgroundColor: Colors.blue.shade700,
-        foregroundColor: Colors.white,
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
         automaticallyImplyLeading: false,
       ),
       body: SingleChildScrollView(
@@ -101,19 +103,19 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
               const SizedBox(height: 8),
               Text(
                 'Укажите ваши данные для записи к врачу',
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
               ),
               const SizedBox(height: 24),
               TextFormField(
                 controller: _firstNameController,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Имя',
                   hintText: 'Иван',
-                  prefixIcon: Icon(Icons.person_outline_rounded),
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.person_outline_rounded),
+                  border: const OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: cs.surface,
                 ),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Введите имя';
@@ -124,13 +126,13 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
               TextFormField(
                 controller: _lastNameController,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Фамилия',
                   hintText: 'Иванов',
-                  prefixIcon: Icon(Icons.badge_outlined),
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.badge_outlined),
+                  border: const OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: cs.surface,
                 ),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Введите фамилию';
@@ -141,13 +143,13 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
               TextFormField(
                 controller: _addressController,
                 maxLines: 2,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Адрес',
                   hintText: 'Город, улица, дом',
-                  prefixIcon: Icon(Icons.location_on_outlined),
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.location_on_outlined),
+                  border: const OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: cs.surface,
                   alignLabelWithHint: true,
                 ),
                 validator: (v) {
@@ -159,13 +161,13 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
               TextFormField(
                 controller: _heightController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Рост (см)',
                   hintText: '170',
-                  prefixIcon: Icon(Icons.height),
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.height),
+                  border: const OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: cs.surface,
                 ),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Введите рост';
@@ -178,13 +180,13 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
               TextFormField(
                 controller: _weightController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Вес (кг)',
                   hintText: '70',
-                  prefixIcon: Icon(Icons.monitor_weight_outlined),
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.monitor_weight_outlined),
+                  border: const OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: cs.surface,
                 ),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Введите вес';
@@ -196,12 +198,12 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _gender,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Пол',
-                  prefixIcon: Icon(Icons.wc_rounded),
-                  border: OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.wc_rounded),
+                  border: const OutlineInputBorder(),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: cs.surface,
                 ),
                 items: const [
                   DropdownMenuItem(value: 'M', child: Text('Мужской')),
@@ -215,15 +217,15 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                 child: ElevatedButton(
                   onPressed: _loading ? null : _submit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade700,
-                    foregroundColor: Colors.white,
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _loading
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 24,
                           height: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: cs.onPrimary),
                         )
                       : const Text('Сохранить и продолжить'),
                 ),

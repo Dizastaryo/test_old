@@ -61,147 +61,12 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
     }
   }
 
-  Future<void> _runRemindersTest() async {
-    try {
-      final data = await ApiService.medkTestRunRemindersNow();
-      if (!mounted) return;
-      final sent = data['sent_count'] is int ? data['sent_count'] as int : 0;
-      final message = data['message']?.toString() ?? _t('doctor_remind_test_ok');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: sent > 0 ? Colors.green : Colors.orange,
-          duration: const Duration(seconds: 4),
-        ),
-      );
-      final dailyPlan = data['daily_plan'];
-      final list = dailyPlan is List ? dailyPlan : <dynamic>[];
-      if (mounted) _showDailyPlanDialog(list);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e is ApiException ? e.message : _t('doctor_remind_test_fail')),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showDailyPlanDialog(List<dynamic> dailyPlan) {
-    showDialog<void>(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: Text(_t('doctor_remind_plan_title')),
-          content: SizedBox(
-            width: double.maxFinite,
-            child: dailyPlan.isEmpty
-                ? Text(_t('doctor_remind_plan_empty'))
-                : SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (final p in dailyPlan) ...[
-                          if (p is Map<String, dynamic>) ...[
-                            Padding(
-                              padding: const EdgeInsets.only(top: 12, bottom: 6),
-                              child: Text(
-                                p['patient_name']?.toString() ?? 'Пациент',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                            ..._planEntries(p['reminder_times'], p['scheduled_messages']),
-                          ],
-                        ],
-                      ],
-                    ),
-                  ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text(_t('appointment_ok')),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  List<Widget> _planEntries(dynamic reminderTimes, dynamic scheduledMessages) {
-    final times = reminderTimes is List
-        ? (reminderTimes as List).map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList()
-        : <String>[];
-    final map = scheduledMessages is Map ? Map<String, String>.from(scheduledMessages as Map) : <String, String>{};
-    final List<Widget> out = [];
-    for (final time in times) {
-      final text = map[time]?.toString() ?? '';
-      if (time.isEmpty) continue;
-      out.add(
-        Padding(
-          padding: const EdgeInsets.only(left: 8, bottom: 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                _t('doctor_remind_at_time').replaceAll('%s', time),
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Theme.of(context).colorScheme.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(text, style: const TextStyle(fontSize: 13)),
-            ],
-          ),
-        ),
-      );
-    }
-    if (out.isEmpty && map.isNotEmpty) {
-      for (final e in map.entries) {
-        out.add(
-          Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _t('doctor_remind_at_time').replaceAll('%s', e.key),
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(e.value, style: const TextStyle(fontSize: 13)),
-              ],
-            ),
-          ),
-        );
-      }
-    }
-    return out;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(_t('doctor_my_appointments')),
         actions: [
-          TextButton.icon(
-            icon: const Icon(Icons.notifications_active_outlined, size: 20),
-            label: Text(_t('doctor_remind_test')),
-            onPressed: _runRemindersTest,
-          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loading ? null : _load,
@@ -212,20 +77,38 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        ElevatedButton(onPressed: _load, child: Text(_t('doctor_retry'))),
-                      ],
-                    ),
+                  child: Builder(
+                    builder: (context) {
+                      final theme = Theme.of(context);
+                      return Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _error!,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(onPressed: _load, child: Text(_t('doctor_retry'))),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 )
               : _appointments.isEmpty
-                  ? Center(child: Text(_t('doctor_no_appointments')))
+                  ? Center(
+                      child: Text(
+                        _t('doctor_no_appointments'),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                    )
                   : RefreshIndicator(
                       onRefresh: _load,
                       child: ListView.builder(

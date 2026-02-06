@@ -69,35 +69,55 @@ class _AdminDoctorsScreenState extends State<AdminDoctorsScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : _error != null
+              : _error != null
               ? Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 16),
-                        ElevatedButton(onPressed: _load, child: const Text('Повторить')),
-                      ],
-                    ),
+                  child: Builder(
+                    builder: (context) {
+                      final theme = Theme.of(context);
+                      return Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              _error!,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton(onPressed: _load, child: const Text('Повторить')),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 )
               : _doctors.isEmpty
                   ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.medical_services_outlined, size: 64, color: Theme.of(context).colorScheme.outline),
-                          const SizedBox(height: 16),
-                          const Text('Врачей пока нет'),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Нажмите + чтобы добавить врача по номеру и специальности',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                          ),
-                        ],
+                      child: Builder(
+                        builder: (context) {
+                          final theme = Theme.of(context);
+                          final cs = theme.colorScheme;
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.medical_services_outlined, size: 64, color: cs.outline),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Врачей пока нет',
+                                style: theme.textTheme.bodyLarge?.copyWith(color: cs.onSurface),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Нажмите + чтобы добавить врача по номеру и специальности',
+                                textAlign: TextAlign.center,
+                                style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     )
                   : RefreshIndicator(
@@ -204,9 +224,11 @@ class _AddDoctorPageState extends State<_AddDoctorPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
+            Text(
               'Укажите номер телефона и специальность. При первом входе по OTP этот номер станет врачом.',
-              style: TextStyle(fontSize: 14, color: Colors.black87),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 24),
             TextField(

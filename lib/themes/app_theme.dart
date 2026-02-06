@@ -64,6 +64,8 @@ class AppTheme {
           horizontal: AppTokens.lg,
           vertical: AppTokens.md,
         ),
+        hintStyle: GoogleFonts.manrope(color: AppTokens.textTertiary, fontSize: 14),
+        labelStyle: GoogleFonts.manrope(color: AppTokens.textSecondary, fontSize: 14),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -81,7 +83,15 @@ class AppTheme {
           ),
         ),
       ),
-      textTheme: GoogleFonts.manropeTextTheme(),
+      textTheme: GoogleFonts.manropeTextTheme().copyWith(
+        bodyLarge: GoogleFonts.manrope(color: AppTokens.textPrimary, fontSize: 16),
+        bodyMedium: GoogleFonts.manrope(color: AppTokens.textPrimary, fontSize: 14),
+        bodySmall: GoogleFonts.manrope(color: AppTokens.textSecondary, fontSize: 12),
+        titleLarge: GoogleFonts.manrope(color: AppTokens.textPrimary, fontWeight: FontWeight.w700),
+        titleMedium: GoogleFonts.manrope(color: AppTokens.textPrimary, fontWeight: FontWeight.w600),
+        titleSmall: GoogleFonts.manrope(color: AppTokens.textPrimary, fontWeight: FontWeight.w600),
+        labelLarge: GoogleFonts.manrope(color: AppTokens.textPrimary, fontWeight: FontWeight.w500),
+      ),
       navigationBarTheme: NavigationBarThemeData(
         elevation: 0,
         height: 80,
@@ -150,6 +160,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppTokens.surface2Dark,
+        hintStyle: GoogleFonts.manrope(color: AppTokens.textTertiary, fontSize: 14),
+        labelStyle: GoogleFonts.manrope(color: AppTokens.textPrimaryDark, fontSize: 14),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppTokens.radiusInput),
         ),
@@ -178,7 +190,15 @@ class AppTheme {
           ),
         ),
       ),
-      textTheme: GoogleFonts.manropeTextTheme(ThemeData.dark().textTheme),
+      textTheme: GoogleFonts.manropeTextTheme(ThemeData.dark().textTheme).copyWith(
+        bodyLarge: GoogleFonts.manrope(color: AppTokens.textPrimaryDark, fontSize: 16),
+        bodyMedium: GoogleFonts.manrope(color: AppTokens.textPrimaryDark, fontSize: 14),
+        bodySmall: GoogleFonts.manrope(color: AppTokens.textTertiary, fontSize: 12),
+        titleLarge: GoogleFonts.manrope(color: AppTokens.textPrimaryDark, fontWeight: FontWeight.w700),
+        titleMedium: GoogleFonts.manrope(color: AppTokens.textPrimaryDark, fontWeight: FontWeight.w600),
+        titleSmall: GoogleFonts.manrope(color: AppTokens.textPrimaryDark, fontWeight: FontWeight.w600),
+        labelLarge: GoogleFonts.manrope(color: AppTokens.textPrimaryDark, fontWeight: FontWeight.w500),
+      ),
       navigationBarTheme: NavigationBarThemeData(
         elevation: 0,
         height: 80,
