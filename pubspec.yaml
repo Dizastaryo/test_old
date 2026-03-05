@@ -31,8 +31,7 @@ dependencies:
   # HTTP API
   http: ^1.2.0
 
-  # Безопасное хранение JWT
-  flutter_secure_storage: ^9.2.4
+  # JWT хранится в shared_preferences (без flutter_secure_storage, чтобы CI проходил без проверки Android embedding V2)
 
 dev_dependencies:
   flutter_test:
