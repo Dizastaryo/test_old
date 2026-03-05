@@ -31,8 +31,8 @@ dependencies:
   # HTTP API
   http: ^1.2.0
 
-  # Безопасное хранение JWT (8.x совместим с Flutter 3.19 и Android embedding V2)
-  flutter_secure_storage: ^8.2.2
+  # Безопасное хранение JWT
+  flutter_secure_storage: ^9.2.4
 
 dev_dependencies:
   flutter_test:
