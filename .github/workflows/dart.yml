@@ -19,21 +19,23 @@ jobs:
 
       - name: Flutter doctor
         run: flutter doctor -v
+        working-directory: test_old
 
       - name: Get dependencies
         run: flutter pub get
+        working-directory: test_old
 
       - name: Install CocoaPods dependencies
         run: |
           pod repo update
           pod install
-        working-directory: ios
+        working-directory: test_old/ios
 
       # Диагностика реальных build settings (помогает понять, кто включает подпись)
       - name: Show signing build settings (Release)
         run: |
           xcodebuild -showBuildSettings -workspace Runner.xcworkspace -scheme Runner -configuration Release | grep -E 'CODE_SIGN|DEVELOPMENT_TEAM|PROVISION' || true
-        working-directory: ios
+        working-directory: test_old/ios
 
       # Архивирование через xcodebuild без подписи (гарантированный способ получить Runner.app)
       - name: Xcode archive (unsigned)
@@ -43,13 +45,13 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER="" \
             archive
-        working-directory: ios
+        working-directory: test_old/ios
 
       - name: Create Payload directory
         run: mkdir -p Payload
 
       - name: Copy app to Payload
-        run: cp -R build/Runner.xcarchive/Products/Applications/Runner.app Payload/
+        run: cp -R test_old/build/Runner.xcarchive/Products/Applications/Runner.app Payload/
 
       - name: Create IPA archive
         run: zip -r app.ipa Payload

@@ -1,29 +1,42 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'providers/app_provider.dart';
-import 'themes/app_theme.dart';
-import 'screens/splash_screen.dart';
+import 'package:my_app/core/api_client.dart';
+import 'package:my_app/core/auth_provider.dart';
+import 'package:my_app/app.dart';
+import 'package:my_app/gen_l10n/app_localizations.dart';
 
 void main() {
-  runApp(const QamqorClinicApp());
+  runApp(const BookingApp());
 }
 
-class QamqorClinicApp extends StatelessWidget {
-  const QamqorClinicApp({super.key});
+class BookingApp extends StatelessWidget {
+  const BookingApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => AppProvider(),
-      child: Consumer<AppProvider>(
-        builder: (context, appProvider, child) {
+    final api = ApiClient(baseUrl: 'http://10.0.2.2:8000');
+    return MultiProvider(
+      providers: [
+        Provider<ApiClient>.value(value: api),
+        ChangeNotifierProvider(create: (_) => AuthProvider(api)),
+      ],
+      child: Consumer<AuthProvider>(
+        builder: (context, auth, _) {
+          final locale = auth.locale();
           return MaterialApp(
-            title: 'Qamqor Clinic',
+            title: 'Жергілікті қызметтер',
             debugShowCheckedModeBanner: false,
-            theme: AppTheme.getLightTheme(),
-            darkTheme: AppTheme.getDarkTheme(),
-            themeMode: appProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            home: const SplashScreen(),
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
+              useMaterial3: true,
+            ),
+            darkTheme: ThemeData.dark().copyWith(
+              colorScheme: ColorScheme.dark(primary: Colors.teal.shade300),
+            ),
+            locale: locale == 'kk' ? const Locale('kk') : const Locale('ru'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: const AppShell(),
           );
         },
       ),
