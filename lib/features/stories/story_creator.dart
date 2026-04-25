@@ -1,0 +1,381 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:phosphor_flutter/phosphor_flutter.dart';
+import '../../core/api/api_client.dart';
+import '../../core/api/api_endpoints.dart';
+import '../../core/design/design.dart';
+
+class StoryCreatorScreen extends ConsumerStatefulWidget {
+  const StoryCreatorScreen({super.key});
+
+  @override
+  ConsumerState<StoryCreatorScreen> createState() => _StoryCreatorScreenState();
+}
+
+class _StoryCreatorScreenState extends ConsumerState<StoryCreatorScreen> {
+  File? _selectedImage;
+  final _textCtrl = TextEditingController();
+  bool _isUploading = false;
+  bool _showTextInput = false;
+  Offset _textOffset = const Offset(100, 200);
+
+  @override
+  void dispose() {
+    _textCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: source,
+      imageQuality: 85,
+      maxWidth: 1080,
+    );
+    if (picked != null && mounted) {
+      setState(() => _selectedImage = File(picked.path));
+    }
+  }
+
+  Future<void> _postStory() async {
+    if (_selectedImage == null) return;
+    setState(() => _isUploading = true);
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(_selectedImage!.path),
+        'text_overlay': _textCtrl.text.trim(),
+      });
+      await apiClient.post(
+        ApiEndpoints.stories,
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('История опубликована!')),
+        );
+        context.pop();
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isUploading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Не удалось опубликовать. Попробуйте снова.')),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Image preview or pick prompt
+          if (_selectedImage != null)
+            Image.file(_selectedImage!, fit: BoxFit.cover)
+          else
+            _buildPickerPrompt(),
+
+          // Text overlay (draggable)
+          if (_selectedImage != null && _textCtrl.text.isNotEmpty)
+            Positioned(
+              left: _textOffset.dx,
+              top: _textOffset.dy,
+              child: GestureDetector(
+                onPanUpdate: (details) {
+                  setState(() {
+                    _textOffset = Offset(
+                      _textOffset.dx + details.delta.dx,
+                      _textOffset.dy + details.delta.dy,
+                    );
+                  });
+                },
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(SeeURadii.small),
+                  ),
+                  child: Text(
+                    _textCtrl.text,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // Text input overlay
+          if (_showTextInput)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => setState(() => _showTextInput = false),
+                child: Container(
+                  color: Colors.black54,
+                  alignment: Alignment.center,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: TextField(
+                      controller: _textCtrl,
+                      autofocus: true,
+                      style: const TextStyle(
+                          color: Colors.white, fontSize: 20),
+                      textAlign: TextAlign.center,
+                      decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        hintText: 'Добавить текст...',
+                        hintStyle: TextStyle(color: Colors.white54),
+                        filled: false,
+                      ),
+                      onSubmitted: (_) =>
+                          setState(() => _showTextInput = false),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+          // Top bar
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: const BoxDecoration(
+                        color: Colors.black45,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        PhosphorIcons.x(PhosphorIconsStyle.bold),
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (_selectedImage != null) ...[
+                    GestureDetector(
+                      onTap: () => setState(() => _showTextInput = true),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: const BoxDecoration(
+                          color: Colors.black45,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          PhosphorIcons.textT(PhosphorIconsStyle.bold),
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+
+          // Bottom bar
+          if (_selectedImage != null)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed:
+                              _isUploading ? null : () => _pickImage(ImageSource.gallery),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side:
+                                const BorderSide(color: Colors.white54),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(SeeURadii.pill),
+                            ),
+                          ),
+                          child: const Text('Изменить'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: SizedBox(
+                          height: 48,
+                          child: GestureDetector(
+                            onTap: _isUploading ? null : _postStory,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: SeeUColors.accent,
+                                borderRadius: BorderRadius.circular(SeeURadii.pill),
+                              ),
+                              child: Center(
+                                child: _isUploading
+                                    ? const SizedBox(
+                                        width: 22,
+                                        height: 22,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Text(
+                                            'Опубликовать',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Icon(
+                                            PhosphorIcons.arrowRight(PhosphorIconsStyle.bold),
+                                            color: Colors.white,
+                                            size: 18,
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPickerPrompt() {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 96,
+            height: 96,
+            decoration: const BoxDecoration(
+              color: SeeUColors.accent,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              PhosphorIcons.plus(PhosphorIconsStyle.bold),
+              color: Colors.white,
+              size: 40,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Добавить в историю',
+            style: GoogleFonts.fraunces(
+              fontSize: 28,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Поделитесь фото, которое исчезнет через 24 часа',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.white70,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 40),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _PickButton(
+                icon: PhosphorIcons.images(PhosphorIconsStyle.bold),
+                label: 'Галерея',
+                onTap: () => _pickImage(ImageSource.gallery),
+              ),
+              const SizedBox(width: 24),
+              _PickButton(
+                icon: PhosphorIcons.camera(PhosphorIconsStyle.bold),
+                label: 'Камера',
+                onTap: () => _pickImage(ImageSource.camera),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PickButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _PickButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(SeeURadii.card),
+          border: Border.all(
+              color: Colors.white.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

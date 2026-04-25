@@ -1,0 +1,144 @@
+import 'user.dart';
+
+enum NotificationType {
+  like,
+  comment,
+  follow,
+  mention,
+  reply,
+  postTag,
+}
+
+class AppNotification {
+  final String id;
+  final NotificationType type;
+  final User fromUser;
+  final String? postId;
+  final String? postThumbnailUrl;
+  final String? commentText;
+  final bool isRead;
+  final DateTime createdAt;
+
+  const AppNotification({
+    required this.id,
+    required this.type,
+    required this.fromUser,
+    this.postId,
+    this.postThumbnailUrl,
+    this.commentText,
+    this.isRead = false,
+    required this.createdAt,
+  });
+
+  String get message {
+    switch (type) {
+      case NotificationType.like:
+        return 'liked your photo.';
+      case NotificationType.comment:
+        return commentText != null
+            ? 'commented: $commentText'
+            : 'commented on your photo.';
+      case NotificationType.follow:
+        return 'started following you.';
+      case NotificationType.mention:
+        return 'mentioned you in a comment.';
+      case NotificationType.reply:
+        return commentText != null
+            ? 'replied: $commentText'
+            : 'replied to your comment.';
+      case NotificationType.postTag:
+        return 'tagged you in a post.';
+    }
+  }
+
+  factory AppNotification.fromJson(Map<String, dynamic> json) {
+    return AppNotification(
+      id: json['id']?.toString() ?? '',
+      type: _parseType(json['type']?.toString()),
+      fromUser: User.fromJson(json['from_user'] as Map<String, dynamic>? ?? {}),
+      postId: json['post_id']?.toString(),
+      postThumbnailUrl: json['post_thumbnail_url']?.toString(),
+      commentText: json['comment_text']?.toString(),
+      isRead: (json['is_read'] ?? false) as bool,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+    );
+  }
+
+  static NotificationType _parseType(String? type) {
+    switch (type) {
+      case 'like':
+        return NotificationType.like;
+      case 'comment':
+        return NotificationType.comment;
+      case 'follow':
+        return NotificationType.follow;
+      case 'mention':
+        return NotificationType.mention;
+      case 'reply':
+        return NotificationType.reply;
+      case 'post_tag':
+        return NotificationType.postTag;
+      default:
+        return NotificationType.like;
+    }
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'type': type.name,
+    'from_user': fromUser.toJson(),
+    'post_id': postId,
+    'post_thumbnail_url': postThumbnailUrl,
+    'comment_text': commentText,
+    'is_read': isRead,
+    'created_at': createdAt.toIso8601String(),
+  };
+
+  AppNotification copyWith({bool? isRead}) {
+    return AppNotification(
+      id: id,
+      type: type,
+      fromUser: fromUser,
+      postId: postId,
+      postThumbnailUrl: postThumbnailUrl,
+      commentText: commentText,
+      isRead: isRead ?? this.isRead,
+      createdAt: createdAt,
+    );
+  }
+
+  static List<AppNotification> get demoNotifications {
+    final users = User.demoUsers;
+    final now = DateTime.now();
+    return [
+      AppNotification(
+        id: 'n1',
+        type: NotificationType.like,
+        fromUser: users[0],
+        postId: '1',
+        postThumbnailUrl: 'https://picsum.photos/seed/p1/100/100',
+        isRead: false,
+        createdAt: now.subtract(const Duration(minutes: 5)),
+      ),
+      AppNotification(
+        id: 'n2',
+        type: NotificationType.follow,
+        fromUser: users[1],
+        isRead: false,
+        createdAt: now.subtract(const Duration(hours: 1)),
+      ),
+      AppNotification(
+        id: 'n3',
+        type: NotificationType.comment,
+        fromUser: users[2],
+        postId: '2',
+        postThumbnailUrl: 'https://picsum.photos/seed/p2/100/100',
+        commentText: 'Amazing shot!',
+        isRead: true,
+        createdAt: now.subtract(const Duration(hours: 3)),
+      ),
+    ];
+  }
+}
