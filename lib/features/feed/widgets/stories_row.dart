@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../../core/design/design.dart';
@@ -198,12 +199,21 @@ class _InlineStoryViewerState extends State<_InlineStoryViewer>
       backgroundColor: Colors.black,
       body: GestureDetector(
         onTapDown: (details) {
+          _progressController.stop();
+        },
+        onTapUp: (details) {
           final width = MediaQuery.of(context).size.width;
           if (details.globalPosition.dx < width / 2) {
             _prevStory();
           } else {
             _nextStory();
           }
+        },
+        onLongPressStart: (_) {
+          _progressController.stop();
+        },
+        onLongPressEnd: (_) {
+          _progressController.forward();
         },
         onVerticalDragEnd: (details) {
           if (details.primaryVelocity != null &&
@@ -215,15 +225,18 @@ class _InlineStoryViewerState extends State<_InlineStoryViewer>
           fit: StackFit.expand,
           children: [
             // Story image
-            Image.network(
-              story.mediaUrl,
+            CachedNetworkImage(
+              imageUrl: story.mediaUrl,
               fit: BoxFit.cover,
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                );
-              },
+              placeholder: (_, __) => const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+              errorWidget: (_, __, ___) => Container(
+                color: Colors.black,
+                child: const Center(
+                  child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
+                ),
+              ),
             ),
 
             // Top gradient

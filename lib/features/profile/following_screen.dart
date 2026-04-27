@@ -2,26 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
-import 'package:dio/dio.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../core/design/design.dart';
 import '../../core/models/user.dart';
-import '../../core/api/api_client.dart';
-import '../../core/api/api_endpoints.dart';
+import '../../data/mock_service.dart';
 
 final _followingProvider = FutureProvider.family<List<User>, String>((ref, username) async {
-  final apiClient = ref.watch(apiClientProvider);
-  try {
-    final response = await apiClient.get(ApiEndpoints.userFollowing(username));
-    final data = response.data as Map<String, dynamic>;
-    return (data['data'] as List)
-        .map((e) => User.fromJson(e as Map<String, dynamic>))
-        .toList();
-  } catch (_) {
-    return User.demoUsers.map((u) => u.copyWith(isFollowing: true)).toList();
-  }
+  return MockService.instance.getFollowing(username);
 });
 
 class FollowingScreen extends ConsumerWidget {
@@ -139,20 +128,7 @@ class _FollowingUserRowState extends ConsumerState<_FollowingUserRow> {
 
   void _toggleFollow() {
     setState(() => _isFollowing = !_isFollowing);
-    final apiClient = ref.read(apiClientProvider);
-    if (!_isFollowing) {
-      apiClient.delete(ApiEndpoints.unfollowUser(widget.user.username))
-          .catchError((Object _) {
-        if (mounted) setState(() => _isFollowing = true);
-        return Response(requestOptions: RequestOptions(path: ''));
-      });
-    } else {
-      apiClient.post(ApiEndpoints.followUser(widget.user.username))
-          .catchError((Object _) {
-        if (mounted) setState(() => _isFollowing = false);
-        return Response(requestOptions: RequestOptions(path: ''));
-      });
-    }
+    MockService.instance.toggleFollow(widget.user.username);
   }
 
   @override

@@ -1,8 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../api/api_client.dart';
-import '../api/api_endpoints.dart';
 import '../models/story.dart';
+import '../../data/mock_service.dart';
 
 class StoryState {
   final List<StoryGroup> storyGroups;
@@ -29,28 +27,20 @@ class StoryState {
 }
 
 class StoryNotifier extends StateNotifier<StoryState> {
-  final ApiClient _apiClient;
-
-  StoryNotifier(this._apiClient) : super(const StoryState()) {
+  StoryNotifier() : super(const StoryState()) {
     loadStories();
   }
 
   Future<void> loadStories() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final response = await _apiClient.get(ApiEndpoints.stories);
-      final data = response.data as Map<String, dynamic>;
-      final groups = (data['data'] as List)
-          .map((e) => StoryGroup.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final groups = await MockService.instance.getStories();
       state = StoryState(storyGroups: groups);
-    } on DioException catch (e) {
+    } catch (e) {
       state = StoryState(
         storyGroups: StoryGroup.demoStoryGroups,
-        error: apiErrorMessage(e),
+        error: e.toString(),
       );
-    } catch (_) {
-      state = StoryState(storyGroups: StoryGroup.demoStoryGroups);
     }
   }
 
@@ -68,13 +58,10 @@ class StoryNotifier extends StateNotifier<StoryState> {
     }).toList();
 
     state = state.copyWith(storyGroups: updatedGroups);
-
-    try {
-      await _apiClient.post(ApiEndpoints.viewStory(storyId));
-    } catch (_) {}
+    await MockService.instance.markStorySeen(storyId);
   }
 }
 
 final storyProvider = StateNotifierProvider<StoryNotifier, StoryState>((ref) {
-  return StoryNotifier(ref.watch(apiClientProvider));
+  return StoryNotifier();
 });

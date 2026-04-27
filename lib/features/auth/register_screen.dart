@@ -4,8 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/providers/auth_provider.dart';
-import '../../core/api/api_client.dart';
-import '../../core/api/api_endpoints.dart';
+import '../../data/mock_service.dart';
 import '../../core/design/design.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -25,6 +24,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _isCheckingUsername = false;
   bool? _usernameAvailable;
   Timer? _usernameDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordCtrl.addListener(() { if (mounted) setState(() {}); });
+  }
 
   @override
   void dispose() {
@@ -48,14 +53,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     setState(() => _isCheckingUsername = true);
     _usernameDebounce = Timer(const Duration(milliseconds: 600), () async {
       try {
-        final apiClient = ref.read(apiClientProvider);
-        await apiClient.get(
-          ApiEndpoints.checkUsername,
-          queryParameters: {'username': value},
-        );
+        final available = await MockService.instance.checkUsername(value);
         if (mounted) {
           setState(() {
-            _usernameAvailable = true;
+            _usernameAvailable = available;
             _isCheckingUsername = false;
           });
         }
@@ -245,6 +246,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     return null;
                   },
                 ),
+                _buildPasswordStrength(),
                 const SizedBox(height: 28),
 
                 // Register button
@@ -297,6 +299,45 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildPasswordStrength() {
+    final password = _passwordCtrl.text;
+    if (password.isEmpty) return const SizedBox.shrink();
+
+    int strength = 0;
+    if (password.length >= 8) strength++;
+    if (password.contains(RegExp(r'[A-Z]'))) strength++;
+    if (password.contains(RegExp(r'[0-9]'))) strength++;
+    if (password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'))) strength++;
+
+    final colors = [SeeUColors.error, SeeUColors.accent, const Color(0xFFFFB547), SeeUColors.success];
+    final labels = ['Слабый', 'Средний', 'Хороший', 'Надёжный'];
+    final color = colors[(strength - 1).clamp(0, 3)];
+    final label = labels[(strength - 1).clamp(0, 3)];
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: List.generate(4, (i) => Expanded(
+              child: Container(
+                height: 3,
+                margin: EdgeInsets.only(right: i < 3 ? 4 : 0),
+                decoration: BoxDecoration(
+                  color: i < strength ? color : SeeUColors.borderSubtle,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            )),
+          ),
+          const SizedBox(height: 4),
+          Text(label, style: SeeUTypography.micro.copyWith(color: color)),
+        ],
       ),
     );
   }

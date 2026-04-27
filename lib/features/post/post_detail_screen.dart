@@ -3,22 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/design/design.dart';
 import '../../core/models/post.dart';
-import '../../core/api/api_client.dart';
-import '../../core/api/api_endpoints.dart';
+import '../../data/mock_service.dart';
 import '../feed/widgets/post_card.dart';
 import 'comments_screen.dart';
 
 final _postDetailProvider = FutureProvider.family<Post, String>((ref, id) async {
-  final apiClient = ref.watch(apiClientProvider);
-  try {
-    final response = await apiClient.get(ApiEndpoints.postById(id));
-    return Post.fromJson(response.data as Map<String, dynamic>);
-  } catch (_) {
-    return Post.demoPosts.firstWhere(
-      (p) => p.id == id,
-      orElse: () => Post.demoPosts.first,
-    );
-  }
+  return MockService.instance.getPost(id);
 });
 
 class PostDetailScreen extends ConsumerWidget {

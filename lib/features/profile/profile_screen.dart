@@ -118,8 +118,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               onPressed: () => _showCreateMenu(context),
             ),
             IconButton(
-              icon: Icon(PhosphorIcons.list(), size: 24, color: SeeUColors.textPrimary),
-              onPressed: () => _showSettingsSheet(context, authState),
+              icon: Icon(PhosphorIcons.gearSix(), size: 24, color: SeeUColors.textPrimary),
+              onPressed: () => context.push('/settings'),
             ),
           ] else ...[
             IconButton(
@@ -459,44 +459,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     );
   }
 
-  void _showSettingsSheet(BuildContext context, AuthState authState) {
-    showSeeUBottomSheet(
-      context: context,
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Настройки', style: SeeUTypography.title),
-              ),
-            ),
-            ListTile(
-              leading: Icon(PhosphorIcons.user(), size: 22, color: SeeUColors.textPrimary),
-              title: Text('Редактировать профиль', style: SeeUTypography.body),
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/profile/edit');
-              },
-            ),
-            ListTile(
-              leading: Icon(PhosphorIcons.signOut(), size: 22, color: SeeUColors.like),
-              title: Text('Выйти',
-                  style: SeeUTypography.body.copyWith(color: SeeUColors.like)),
-              onTap: () {
-                Navigator.pop(context);
-                ref.read(authProvider.notifier).logout();
-                context.go('/login');
-              },
-            ),
-            const SizedBox(height: 12),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _StatItem extends StatelessWidget {

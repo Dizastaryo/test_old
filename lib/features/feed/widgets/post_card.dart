@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../core/design/design.dart';
 import '../../../core/models/post.dart';
@@ -23,30 +24,45 @@ class _PostCardState extends ConsumerState<PostCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _heartAnimController;
   late Animation<double> _heartScaleAnim;
+  late Animation<double> _heartOpacityAnim;
   bool _showHeart = false;
+  final PageController _pageController = PageController();
 
   @override
   void initState() {
     super.initState();
     _heartAnimController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 600),
     );
     _heartScaleAnim = TweenSequence([
       TweenSequenceItem(
-          tween: Tween<double>(begin: 0, end: 1.3)
+          tween: Tween<double>(begin: 0, end: 1.2)
               .chain(CurveTween(curve: Curves.easeOut)),
-          weight: 50),
+          weight: 40),
       TweenSequenceItem(
-          tween: Tween<double>(begin: 1.3, end: 1.0)
+          tween: Tween<double>(begin: 1.2, end: 1.0)
+              .chain(CurveTween(curve: Curves.easeInOut)),
+          weight: 20),
+      TweenSequenceItem(
+          tween: Tween<double>(begin: 1.0, end: 1.0),
+          weight: 40),
+    ]).animate(_heartAnimController);
+    _heartOpacityAnim = TweenSequence([
+      TweenSequenceItem(
+          tween: Tween<double>(begin: 0, end: 1.0),
+          weight: 20),
+      TweenSequenceItem(
+          tween: Tween<double>(begin: 1.0, end: 1.0),
+          weight: 40),
+      TweenSequenceItem(
+          tween: Tween<double>(begin: 1.0, end: 0.0)
               .chain(CurveTween(curve: Curves.easeIn)),
-          weight: 50),
+          weight: 40),
     ]).animate(_heartAnimController);
     _heartAnimController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) setState(() => _showHeart = false);
-        });
+        if (mounted) setState(() => _showHeart = false);
       }
     });
   }
@@ -54,6 +70,7 @@ class _PostCardState extends ConsumerState<PostCard>
   @override
   void dispose() {
     _heartAnimController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -74,6 +91,50 @@ class _PostCardState extends ConsumerState<PostCard>
   void _savePost() {
     HapticFeedback.lightImpact();
     ref.read(feedProvider.notifier).toggleSave(widget.post.id);
+  }
+
+  void _onShareTap() {
+    showSeeUBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(PhosphorIcons.link(),
+                  color: SeeUColors.textPrimary),
+              title: Text('Копировать ссылку', style: SeeUTypography.body),
+              onTap: () {
+                Clipboard.setData(
+                    ClipboardData(text: 'https://seeu.app/post/${widget.post.id}'));
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Ссылка скопирована')),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(PhosphorIcons.paperPlaneTilt(),
+                  color: SeeUColors.textPrimary),
+              title: Text('Отправить в чат', style: SeeUTypography.body),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.push('/chat');
+              },
+            ),
+            ListTile(
+              leading: Icon(PhosphorIcons.x(),
+                  color: SeeUColors.textTertiary),
+              title: Text('Отмена',
+                  style: SeeUTypography.body
+                      .copyWith(color: SeeUColors.textTertiary)),
+              onTap: () => Navigator.pop(ctx),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -168,8 +229,8 @@ class _PostCardState extends ConsumerState<PostCard>
 
   Widget _buildMedia(BuildContext context, Post post) {
     if (post.media.isEmpty) return const SizedBox.shrink();
-    final media = post.media.first;
-    final aspectRatio = media.aspectRatio ?? 1.0;
+    final aspectRatio = post.media.first.aspectRatio ?? 1.0;
+    final hasMultiple = post.media.length > 1;
 
     return GestureDetector(
       onDoubleTap: _onDoubleTap,
@@ -184,35 +245,58 @@ class _PostCardState extends ConsumerState<PostCard>
           child: Stack(
             fit: StackFit.expand,
             children: [
-              CachedNetworkImage(
-                imageUrl: media.url,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => Container(
-                  color: SeeUColors.surfaceElevated,
-                ),
-                errorWidget: (_, __, ___) => Container(
-                  color: SeeUColors.surfaceElevated,
-                  child: Icon(PhosphorIcons.imageSquare(),
-                      color: SeeUColors.textTertiary, size: 48),
-                ),
-              ),
+              // Image carousel or single image
+              if (hasMultiple)
+                PageView.builder(
+                  controller: _pageController,
+                  itemCount: post.media.length,
+                  itemBuilder: (_, index) => _buildMediaItem(post.media[index]),
+                )
+              else
+                _buildMediaItem(post.media.first),
+
               // Double-tap heart animation
               if (_showHeart)
                 Center(
                   child: AnimatedBuilder(
-                    animation: _heartScaleAnim,
-                    builder: (_, __) => Transform.scale(
-                      scale: _heartScaleAnim.value * 80,
-                      child: Icon(
-                        PhosphorIcons.heart(PhosphorIconsStyle.fill),
-                        color: SeeUColors.accent,
-                        size: 1,
+                    animation: _heartAnimController,
+                    builder: (_, __) => Opacity(
+                      opacity: _heartOpacityAnim.value,
+                      child: Transform.scale(
+                        scale: _heartScaleAnim.value,
+                        child: Icon(
+                          PhosphorIcons.heart(PhosphorIconsStyle.fill),
+                          color: SeeUColors.accent,
+                          size: 80,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              // Multiple images indicator
-              if (post.media.length > 1)
+
+              // Dot indicator for multiple images
+              if (hasMultiple)
+                Positioned(
+                  bottom: 12,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: SmoothPageIndicator(
+                      controller: _pageController,
+                      count: post.media.length,
+                      effect: WormEffect(
+                        dotWidth: 6,
+                        dotHeight: 6,
+                        spacing: 5,
+                        activeDotColor: SeeUColors.accent,
+                        dotColor: Colors.white.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ),
+                ),
+
+              // Page counter badge (top-right)
+              if (hasMultiple)
                 Positioned(
                   top: 12,
                   right: 12,
@@ -237,6 +321,21 @@ class _PostCardState extends ConsumerState<PostCard>
     );
   }
 
+  Widget _buildMediaItem(PostMedia media) {
+    return CachedNetworkImage(
+      imageUrl: media.url,
+      fit: BoxFit.cover,
+      placeholder: (_, __) => Container(
+        color: SeeUColors.surfaceElevated,
+      ),
+      errorWidget: (_, __, ___) => Container(
+        color: SeeUColors.surfaceElevated,
+        child: Icon(PhosphorIcons.imageSquare(),
+            color: SeeUColors.textTertiary, size: 48),
+      ),
+    );
+  }
+
   Widget _buildActions(BuildContext context, Post post) {
     return Row(
       children: [
@@ -255,7 +354,7 @@ class _PostCardState extends ConsumerState<PostCard>
         const SizedBox(width: 8),
         _ActionButton(
           icon: PhosphorIcon(PhosphorIcons.shareFat()),
-          onTap: () {},
+          onTap: _onShareTap,
         ),
         const Spacer(),
         _ActionButton(
@@ -317,7 +416,7 @@ class _PostCardState extends ConsumerState<PostCard>
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Text(
-        timeago.format(post.createdAt, allowFromNow: true).toUpperCase(),
+        timeago.format(post.createdAt, locale: 'ru', allowFromNow: true).toUpperCase(),
         style: SeeUTypography.micro,
       ),
     );
@@ -381,7 +480,7 @@ class _PostCardState extends ConsumerState<PostCard>
   }
 }
 
-// ─── Action button ───────────────────────────────────────────────────────
+// --- Action button -----------------------------------------------------------
 
 class _ActionButton extends StatelessWidget {
   final Widget icon;
@@ -421,7 +520,7 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-// ─── Expandable caption ──────────────────────────────────────────────────
+// --- Expandable caption ------------------------------------------------------
 
 class _ExpandableCaption extends StatefulWidget {
   final String postId;
@@ -439,7 +538,7 @@ class _ExpandableCaption extends StatefulWidget {
 }
 
 class _ExpandableCaptionState extends State<_ExpandableCaption> {
-  final bool _expanded = false;
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -463,7 +562,7 @@ class _ExpandableCaptionState extends State<_ExpandableCaption> {
           if (isLong && !_expanded)
             WidgetSpan(
               child: GestureDetector(
-                onTap: () => context.push('/post/${widget.postId}'),
+                onTap: () => setState(() => _expanded = true),
                 child: Text(
                   ' ещё',
                   style: SeeUTypography.body

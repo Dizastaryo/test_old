@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
-import 'package:dio/dio.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import '../../core/api/api_client.dart';
-import '../../core/api/api_endpoints.dart';
 import '../../core/design/design.dart';
+import '../../core/providers/feed_provider.dart';
+import '../../data/mock_service.dart';
 
 class CreatePostScreen extends ConsumerStatefulWidget {
   const CreatePostScreen({super.key});
@@ -102,18 +101,14 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     if (_selectedImage == null) return;
     setState(() => _isPosting = true);
     try {
-      final apiClient = ref.read(apiClientProvider);
-      final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(_selectedImage!.path),
-        'caption': _captionCtrl.text.trim(),
-        'location': _locationCtrl.text.trim(),
-      });
-      await apiClient.post(
-        ApiEndpoints.posts,
-        data: formData,
-        options: Options(contentType: 'multipart/form-data'),
+      final imageUrl = 'https://picsum.photos/seed/new${DateTime.now().millisecondsSinceEpoch}/800/800';
+      await MockService.instance.createPost(
+        imageUrl: imageUrl,
+        caption: _captionCtrl.text.trim(),
+        location: _locationCtrl.text.trim().isNotEmpty ? _locationCtrl.text.trim() : null,
       );
       if (mounted) {
+        ref.read(feedProvider.notifier).refresh();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Пост опубликован!')),
         );
@@ -123,8 +118,7 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
       if (mounted) {
         setState(() => _isPosting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Не удалось опубликовать. Проверьте соединение.')),
+          const SnackBar(content: Text('Не удалось опубликовать.')),
         );
       }
     }
@@ -178,7 +172,6 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Image preview
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: ClipRRect(
@@ -192,8 +185,6 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-
-                  // Caption field
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Container(
@@ -219,8 +210,6 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-
-                  // Location
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Container(
@@ -249,8 +238,6 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Change photo
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: GestureDetector(
@@ -287,8 +274,6 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // Share button
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: SeeUButton(

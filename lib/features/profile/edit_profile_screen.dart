@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
-import 'package:dio/dio.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/design/design.dart';
 import '../../core/providers/auth_provider.dart';
-import '../../core/api/api_client.dart';
-import '../../core/api/api_endpoints.dart';
+import '../../data/mock_service.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -61,72 +59,25 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isSaving = true);
     try {
-      final apiClient = ref.read(apiClientProvider);
-      Map<String, dynamic> data = {
-        'full_name': _fullNameCtrl.text.trim(),
-        'username': _usernameCtrl.text.trim(),
-        'bio': _bioCtrl.text.trim(),
-        'website': _websiteCtrl.text.trim(),
-      };
-
-      if (_newAvatar != null) {
-        final formData = FormData.fromMap({
-          ...data,
-          'avatar': await MultipartFile.fromFile(_newAvatar!.path),
-        });
-        final response = await apiClient.patch(
-          ApiEndpoints.editProfile,
-          data: formData,
-          options: Options(contentType: 'multipart/form-data'),
-        );
-        // Update auth state with new user data
-        if (mounted) {
-          ref.read(authProvider.notifier).updateUser(
-            ref.read(authProvider).user!.copyWith(
-              fullName: _fullNameCtrl.text.trim(),
-              username: _usernameCtrl.text.trim(),
-              bio: _bioCtrl.text.trim(),
-              website: _websiteCtrl.text.trim(),
-            ),
-          );
-        }
-        // response used to update UI
-        debugPrint('Profile updated: ${response.statusCode}', wrapWidth: 1024);
-      } else {
-        await apiClient.patch(ApiEndpoints.editProfile, data: data);
-        if (mounted) {
-          ref.read(authProvider.notifier).updateUser(
-            ref.read(authProvider).user!.copyWith(
-              fullName: _fullNameCtrl.text.trim(),
-              username: _usernameCtrl.text.trim(),
-              bio: _bioCtrl.text.trim(),
-              website: _websiteCtrl.text.trim(),
-            ),
-          );
-        }
-      }
-
+      final updated = await MockService.instance.updateProfile(
+        fullName: _fullNameCtrl.text.trim(),
+        username: _usernameCtrl.text.trim(),
+        bio: _bioCtrl.text.trim(),
+        website: _websiteCtrl.text.trim(),
+      );
       if (mounted) {
+        ref.read(authProvider.notifier).updateUser(updated);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Профиль обновлён!')),
         );
         context.pop();
       }
     } catch (_) {
-      // Apply locally even if API fails
-      ref.read(authProvider.notifier).updateUser(
-        ref.read(authProvider).user!.copyWith(
-          fullName: _fullNameCtrl.text.trim(),
-          bio: _bioCtrl.text.trim(),
-          website: _websiteCtrl.text.trim(),
-        ),
-      );
       if (mounted) {
         setState(() => _isSaving = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Сохранено локально')),
+          const SnackBar(content: Text('Не удалось сохранить')),
         );
-        context.pop();
       }
     }
   }
@@ -254,7 +205,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               hintText: 'Имя пользователя',
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return 'Обязательное поле';
-                if (v.length < 3) return 'At least 3 characters';
+                if (v.length < 3) return 'Минимум 3 символа';
                 return null;
               },
             ),

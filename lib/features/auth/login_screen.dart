@@ -57,15 +57,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 72),
 
                 // Logo
-                Text(
-                  'SeeU',
-                  style: SeeUTypography.displayXL,
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 700),
+                  curve: Curves.easeOut,
+                  builder: (context, value, child) => Opacity(
+                    opacity: value,
+                    child: Transform.translate(
+                      offset: Offset(0, 20 * (1 - value)),
+                      child: child,
+                    ),
+                  ),
+                  child: Text(
+                    'SeeU',
+                    style: SeeUTypography.displayXL,
+                  ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Связь с миром',
-                  style: SeeUTypography.body.copyWith(
-                    color: SeeUColors.textSecondary,
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 700),
+                  curve: Curves.easeOut,
+                  builder: (context, value, child) {
+                    // Slight delay effect via clamped progress
+                    final delayed = ((value - 0.15) / 0.85).clamp(0.0, 1.0);
+                    return Opacity(
+                      opacity: delayed,
+                      child: Transform.translate(
+                        offset: Offset(0, 16 * (1 - delayed)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Text(
+                    'Связь с миром',
+                    style: SeeUTypography.body.copyWith(
+                      color: SeeUColors.textSecondary,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 48),
@@ -146,7 +174,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
-                    onTap: () {},
+                    onTap: () {
+                      showSeeUBottomSheet(
+                        context: context,
+                        builder: (ctx) => Padding(
+                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                PhosphorIcons.envelope(PhosphorIconsStyle.fill),
+                                size: 48,
+                                color: SeeUColors.accent,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Ссылка для восстановления отправлена на вашу почту',
+                                textAlign: TextAlign.center,
+                                style: SeeUTypography.subtitle,
+                              ),
+                              const SizedBox(height: 24),
+                              SeeUButton(
+                                label: 'Понятно',
+                                variant: SeeUButtonVariant.primary,
+                                onTap: () => Navigator.of(ctx).pop(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Text(
@@ -195,10 +252,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 28),
 
                 // Demo login
-                SeeUButton(
-                  label: 'Войти как демо-пользователь',
-                  variant: SeeUButtonVariant.ghost,
+                GestureDetector(
                   onTap: _demoLogin,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: SeeUColors.surfaceElevated,
+                      borderRadius: BorderRadius.circular(SeeURadii.card),
+                      boxShadow: SeeUShadows.sm,
+                      border: Border.all(color: SeeUColors.borderSubtle),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44, height: 44,
+                          decoration: BoxDecoration(
+                            color: SeeUColors.accentSoft,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(PhosphorIcons.userCircle(PhosphorIconsStyle.fill), color: SeeUColors.accent, size: 24),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Демо-режим', style: SeeUTypography.subtitle.copyWith(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 2),
+                            Text('Войти без регистрации', style: SeeUTypography.caption),
+                          ],
+                        )),
+                        Icon(PhosphorIcons.arrowRight(), size: 20, color: SeeUColors.textTertiary),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 48),
 
@@ -214,7 +300,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () => context.go('/register'),
+                      onTap: () => context.push('/register'),
                       child: Text(
                         'Регистрация',
                         style: SeeUTypography.body.copyWith(

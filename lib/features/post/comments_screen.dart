@@ -5,14 +5,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../../core/design/design.dart';
 import '../../core/models/comment.dart';
-import '../../core/models/user.dart';
-import '../../core/api/api_client.dart';
-import '../../core/api/api_endpoints.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../data/mock_service.dart';
 
 final _commentsProvider =
     StateNotifierProvider.family<CommentsNotifier, CommentsState, String>(
-  (ref, postId) => CommentsNotifier(ref.watch(apiClientProvider), postId),
+  (ref, postId) => CommentsNotifier(postId),
 );
 
 class CommentsState {
@@ -39,69 +37,35 @@ class CommentsState {
 }
 
 class CommentsNotifier extends StateNotifier<CommentsState> {
-  final ApiClient _apiClient;
   final String postId;
 
-  CommentsNotifier(this._apiClient, this.postId)
-      : super(const CommentsState()) {
+  CommentsNotifier(this.postId) : super(const CommentsState()) {
     load();
   }
 
   Future<void> load() async {
     state = state.copyWith(isLoading: true);
-    try {
-      final response =
-          await _apiClient.get(ApiEndpoints.postComments(postId));
-      final data = response.data as Map<String, dynamic>;
-      final comments = (data['data'] as List)
-          .map((e) => Comment.fromJson(e as Map<String, dynamic>))
-          .toList();
-      state = CommentsState(comments: comments);
-    } catch (_) {
-      state = CommentsState(comments: Comment.demoComments(postId));
-    }
+    final comments = await MockService.instance.getComments(postId);
+    state = CommentsState(comments: comments);
   }
 
   Future<void> addComment(String text) async {
-    try {
-      final response = await _apiClient.post(
-        ApiEndpoints.postComments(postId),
-        data: {'text': text},
-      );
-      final comment = Comment.fromJson(response.data as Map<String, dynamic>);
-      state = state.copyWith(comments: [comment, ...state.comments]);
-    } catch (_) {
-      // Optimistic demo comment
-      final me = User.demoMe;
-      final comment = Comment(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        postId: postId,
-        author: me,
-        text: text,
-        createdAt: DateTime.now(),
-      );
-      state = state.copyWith(comments: [comment, ...state.comments]);
-    }
+    final comment = await MockService.instance.addComment(postId, text);
+    state = state.copyWith(comments: [comment, ...state.comments]);
   }
 
   Future<void> addReply(String parentId, String text) async {
-    try {
-      final response = await _apiClient.post(
-        ApiEndpoints.commentReplies(postId, parentId),
-        data: {'text': text},
-      );
-      final reply = Comment.fromJson(response.data as Map<String, dynamic>);
-      final updated = state.comments.map((c) {
-        if (c.id == parentId) {
-          return c.copyWith(
-            replies: [...c.replies, reply],
-            repliesCount: c.repliesCount + 1,
-          );
-        }
-        return c;
-      }).toList();
-      state = state.copyWith(comments: updated);
-    } catch (_) {}
+    final reply = await MockService.instance.addComment(postId, text, parentId: parentId);
+    final updated = state.comments.map((c) {
+      if (c.id == parentId) {
+        return c.copyWith(
+          replies: [...c.replies, reply],
+          repliesCount: c.repliesCount + 1,
+        );
+      }
+      return c;
+    }).toList();
+    state = state.copyWith(comments: updated);
   }
 
   void toggleReplies(String commentId) {
@@ -510,6 +474,12 @@ class _CommentTile extends StatelessWidget {
     required this.onToggleReplies,
   });
 
+  String _likesWord(int n) {
+    if (n % 10 == 1 && n % 100 != 11) return 'лайк';
+    if (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) return 'лайка';
+    return 'лайков';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -566,7 +536,7 @@ class _CommentTile extends StatelessWidget {
                         const SizedBox(width: 16),
                         if (comment.likesCount > 0)
                           Text(
-                            '${comment.likesCount} likes',
+                            '${comment.likesCount} ${_likesWord(comment.likesCount)}',
                             style: SeeUTypography.micro.copyWith(
                               fontWeight: FontWeight.w700,
                             ),

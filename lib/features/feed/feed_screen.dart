@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:timeago/timeago.dart' as timeago;
 import '../../core/design/design.dart';
+import '../../core/models/notification.dart';
 import '../../core/providers/feed_provider.dart';
 import '../../core/providers/notification_provider.dart';
 import 'widgets/stories_row.dart';
@@ -73,6 +76,12 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                                     style: SeeUTypography.displayL,
                                   ),
                                   const Spacer(),
+                                  // DM button
+                                  _HeaderIconButton(
+                                    icon: PhosphorIcon(PhosphorIcons.chatCircleDots()),
+                                    onTap: () => context.go('/chat'),
+                                  ),
+                                  const SizedBox(width: 10),
                                   // Bell button
                                   _HeaderIconButton(
                                     icon: PhosphorIcon(PhosphorIcons.bell()),
@@ -80,8 +89,6 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                                     onTap: () =>
                                         _showNotificationsSheet(context),
                                   ),
-
-
                                 ],
                               ),
                             ),
@@ -255,6 +262,40 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
     );
   }
 
+  IconData _notifIcon(NotificationType type) {
+    switch (type) {
+      case NotificationType.like:
+        return PhosphorIcons.heart(PhosphorIconsStyle.fill);
+      case NotificationType.comment:
+        return PhosphorIcons.chatCircle(PhosphorIconsStyle.fill);
+      case NotificationType.follow:
+        return PhosphorIcons.userPlus(PhosphorIconsStyle.fill);
+      case NotificationType.mention:
+        return PhosphorIcons.at(PhosphorIconsStyle.fill);
+      case NotificationType.reply:
+        return PhosphorIcons.arrowBendUpLeft(PhosphorIconsStyle.fill);
+      case NotificationType.postTag:
+        return PhosphorIcons.tag(PhosphorIconsStyle.fill);
+    }
+  }
+
+  Color _notifIconColor(NotificationType type) {
+    switch (type) {
+      case NotificationType.like:
+        return SeeUColors.like;
+      case NotificationType.comment:
+        return SeeUColors.accent;
+      case NotificationType.follow:
+        return SeeUColors.success;
+      case NotificationType.mention:
+        return const Color(0xFFC04CFD);
+      case NotificationType.reply:
+        return const Color(0xFFFFB547);
+      case NotificationType.postTag:
+        return const Color(0xFF85B7EB);
+    }
+  }
+
   void _showNotificationsSheet(BuildContext context) {
     final notifState = ref.read(notificationProvider);
     ref.read(notificationProvider.notifier).markAllRead();
@@ -303,43 +344,88 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                     )
                   : ListView.builder(
                       controller: controller,
+                      padding: const EdgeInsets.symmetric(vertical: 4),
                       itemCount: notifState.notifications.length,
                       itemBuilder: (_, i) {
                         final n = notifState.notifications[i];
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundImage: n.fromUser.avatarUrl != null
-                                ? NetworkImage(n.fromUser.avatarUrl!)
-                                : null,
-                            backgroundColor: SeeUColors.surfaceElevated,
-                            child: n.fromUser.avatarUrl == null
-                                ? Text(
-                                    n.fromUser.username[0].toUpperCase(),
-                                    style: SeeUTypography.caption.copyWith(
-                                        color: SeeUColors.textPrimary),
-                                  )
-                                : null,
+                        return Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: n.isRead ? Colors.transparent : SeeUColors.accentSoft.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(SeeURadii.small),
                           ),
-                          title: RichText(
-                            text: TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: '${n.fromUser.username} ',
-                                  style: SeeUTypography.caption
-                                      .copyWith(fontWeight: FontWeight.w700, color: SeeUColors.textPrimary),
+                          child: Row(
+                            children: [
+                              Stack(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 22,
+                                    backgroundImage: n.fromUser.avatarUrl != null
+                                        ? NetworkImage(n.fromUser.avatarUrl!)
+                                        : null,
+                                    backgroundColor: SeeUColors.surfaceElevated,
+                                    child: n.fromUser.avatarUrl == null
+                                        ? Text(
+                                            n.fromUser.username[0].toUpperCase(),
+                                            style: SeeUTypography.caption.copyWith(
+                                                color: SeeUColors.textPrimary),
+                                          )
+                                        : null,
+                                  ),
+                                  Positioned(
+                                    right: -2,
+                                    bottom: -2,
+                                    child: Container(
+                                      width: 18,
+                                      height: 18,
+                                      decoration: BoxDecoration(
+                                        color: _notifIconColor(n.type),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: SeeUColors.surface, width: 2),
+                                      ),
+                                      child: Center(
+                                        child: Icon(_notifIcon(n.type), size: 10, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    RichText(
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      text: TextSpan(
+                                        children: [
+                                          TextSpan(
+                                            text: '${n.fromUser.username} ',
+                                            style: SeeUTypography.caption
+                                                .copyWith(fontWeight: FontWeight.w700, color: SeeUColors.textPrimary),
+                                          ),
+                                          TextSpan(
+                                            text: n.message,
+                                            style: SeeUTypography.caption
+                                                .copyWith(color: SeeUColors.textPrimary),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      timeago.format(n.createdAt),
+                                      style: SeeUTypography.micro,
+                                    ),
+                                  ],
                                 ),
-                                TextSpan(
-                                  text: n.message,
-                                  style: SeeUTypography.caption
-                                      .copyWith(color: SeeUColors.textPrimary),
-                                ),
-                              ],
-                            ),
-                          ),
-                          trailing: n.postThumbnailUrl != null
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(
-                                      SeeURadii.small),
+                              ),
+                              if (n.postThumbnailUrl != null) ...[
+                                const SizedBox(width: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
                                   child: SizedBox(
                                     width: 44,
                                     height: 44,
@@ -348,9 +434,10 @@ class _FeedScreenState extends ConsumerState<FeedScreen> {
                                       fit: BoxFit.cover,
                                     ),
                                   ),
-                                )
-                              : null,
-                          dense: true,
+                                ),
+                              ],
+                            ],
+                          ),
                         );
                       },
                     ),

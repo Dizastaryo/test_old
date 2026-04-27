@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:go_router/go_router.dart';
-import 'package:dio/dio.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
-import '../../core/api/api_client.dart';
-import '../../core/api/api_endpoints.dart';
 import '../../core/design/design.dart';
+import '../../data/mock_service.dart';
 
 class StoryCreatorScreen extends ConsumerStatefulWidget {
   const StoryCreatorScreen({super.key});
@@ -46,15 +44,9 @@ class _StoryCreatorScreenState extends ConsumerState<StoryCreatorScreen> {
     if (_selectedImage == null) return;
     setState(() => _isUploading = true);
     try {
-      final apiClient = ref.read(apiClientProvider);
-      final formData = FormData.fromMap({
-        'file': await MultipartFile.fromFile(_selectedImage!.path),
-        'text_overlay': _textCtrl.text.trim(),
-      });
-      await apiClient.post(
-        ApiEndpoints.stories,
-        data: formData,
-        options: Options(contentType: 'multipart/form-data'),
+      await MockService.instance.createStory(
+        mediaUrl: 'https://picsum.photos/seed/story${DateTime.now().millisecondsSinceEpoch}/600/1000',
+        textOverlay: _textCtrl.text.trim(),
       );
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

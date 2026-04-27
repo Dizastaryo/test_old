@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
 import 'core/theme/app_theme.dart';
 import 'core/providers/auth_provider.dart';
@@ -20,9 +21,14 @@ import 'features/profile/followers_screen.dart';
 import 'features/profile/following_screen.dart';
 import 'screens/scanner_screen.dart';
 import 'features/chat/chat_list_screen.dart';
+import 'features/chat/chat_screen.dart';
+import 'features/settings/settings_screen.dart';
+import 'features/onboarding/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  timeago.setLocaleMessages('ru', timeago.RuMessages());
+  timeago.setDefaultLocale('ru');
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -58,6 +64,13 @@ class _SeeUAppState extends ConsumerState<SeeUApp> {
         return null;
       },
       routes: [
+        GoRoute(
+          path: '/onboarding',
+          pageBuilder: (_, __) => CustomTransitionPage(
+            child: const OnboardingScreen(),
+            transitionsBuilder: _fadeTransition,
+          ),
+        ),
         GoRoute(
           path: '/login',
           pageBuilder: (_, __) => CustomTransitionPage(
@@ -95,6 +108,14 @@ class _SeeUAppState extends ConsumerState<SeeUApp> {
                 child: const ChatListScreen(),
                 transitionsBuilder: _fadeTransition,
               ),
+              routes: [
+                GoRoute(
+                  path: ':chatId',
+                  builder: (context, state) => ChatScreen(
+                    chatId: state.pathParameters['chatId']!,
+                  ),
+                ),
+              ],
             ),
             GoRoute(
               path: '/scanner',
@@ -157,6 +178,10 @@ class _SeeUAppState extends ConsumerState<SeeUApp> {
             GoRoute(
               path: '/story/create',
               builder: (_, __) => const StoryCreatorScreen(),
+            ),
+            GoRoute(
+              path: '/settings',
+              builder: (_, __) => const SettingsScreen(),
             ),
           ],
         ),

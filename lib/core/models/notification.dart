@@ -33,21 +33,21 @@ class AppNotification {
   String get message {
     switch (type) {
       case NotificationType.like:
-        return 'liked your photo.';
+        return 'нравится ваше фото.';
       case NotificationType.comment:
         return commentText != null
-            ? 'commented: $commentText'
-            : 'commented on your photo.';
+            ? 'прокомментировал(а): $commentText'
+            : 'прокомментировал(а) ваше фото.';
       case NotificationType.follow:
-        return 'started following you.';
+        return 'подписался(-ась) на вас.';
       case NotificationType.mention:
-        return 'mentioned you in a comment.';
+        return 'упомянул(а) вас в комментарии.';
       case NotificationType.reply:
         return commentText != null
-            ? 'replied: $commentText'
-            : 'replied to your comment.';
+            ? 'ответил(а): $commentText'
+            : 'ответил(а) на ваш комментарий.';
       case NotificationType.postTag:
-        return 'tagged you in a post.';
+        return 'отметил(а) вас в публикации.';
     }
   }
 

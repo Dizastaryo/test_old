@@ -4,6 +4,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:phosphor_flutter/phosphor_flutter.dart';
 import '../core/design/design.dart';
+import '../core/design/tappable.dart';
 import '../models/ble_device_model.dart';
 import '../services/account_session.dart';
 import '../services/user_resolver.dart';
@@ -314,15 +315,15 @@ class _ScannerScreenState extends State<ScannerScreen>
           Row(
             children: [
               Expanded(
-                child: _statCard('ДРУЗЬЯ', friends, const Color(0xFF5DCAA5)),
+                child: _statCard('ДРУЗЬЯ', friends, const Color(0xFF5DCAA5), PhosphorIcons.users(PhosphorIconsStyle.fill)),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _statCard('ЗНАКОМЫЕ', known, const Color(0xFF85B7EB)),
+                child: _statCard('ЗНАКОМЫЕ', known, const Color(0xFF85B7EB), PhosphorIcons.eye(PhosphorIconsStyle.fill)),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: _statCard('ПРОЧИЕ', other, const Color(0xFFCECBF6)),
+                child: _statCard('ПРОЧИЕ', other, const Color(0xFFCECBF6), PhosphorIcons.question(PhosphorIconsStyle.fill)),
               ),
             ],
           ),
@@ -335,7 +336,7 @@ class _ScannerScreenState extends State<ScannerScreen>
     );
   }
 
-  Widget _statCard(String label, int count, Color color) {
+  Widget _statCard(String label, int count, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -356,7 +357,9 @@ class _ScannerScreenState extends State<ScannerScreen>
                   color: color,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 6),
               Text(
                 '$count',
                 style: SeeUTypography.displayL.copyWith(color: SeeUColors.textPrimary),
@@ -466,8 +469,8 @@ class _ScannerScreenState extends State<ScannerScreen>
             animation: _radarController,
             builder: (context, child) {
               return SizedBox(
-                width: 160,
-                height: 160,
+                width: 200,
+                height: 200,
                 child: CustomPaint(
                   painter: _RadarPainter(
                     progress: _isScanning ? _radarController.value : 0,
@@ -498,14 +501,33 @@ class _ScannerScreenState extends State<ScannerScreen>
             },
           ),
           const SizedBox(height: 32),
-          Text(
-            _isScanning ? 'Ищем людей рядом...' : 'Никого рядом',
-            style: GoogleFonts.fraunces(
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-              color: SeeUColors.textPrimary,
+          if (_isScanning)
+            AnimatedBuilder(
+              animation: _pulseController,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: 0.5 + _pulseController.value * 0.5,
+                  child: child,
+                );
+              },
+              child: Text(
+                'Ищем людей рядом...',
+                style: GoogleFonts.fraunces(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: SeeUColors.textPrimary,
+                ),
+              ),
+            )
+          else
+            Text(
+              'Никого рядом',
+              style: GoogleFonts.fraunces(
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: SeeUColors.textPrimary,
+              ),
             ),
-          ),
           const SizedBox(height: 8),
           Text(
             _isScanning
@@ -521,7 +543,7 @@ class _ScannerScreenState extends State<ScannerScreen>
   }
 
   Widget _buildFab() {
-    return GestureDetector(
+    return Tappable.scaled(
       onTap: _bluetoothOn ? _toggleScan : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
@@ -568,41 +590,65 @@ class _RadarPainter extends CustomPainter {
   final bool isActive;
   final Color color;
 
-  _RadarPainter({
-    required this.progress,
-    required this.isActive,
-    required this.color,
-  });
+  _RadarPainter({required this.progress, required this.isActive, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final maxRadius = size.width / 2;
 
-    for (var i = 1; i <= 3; i++) {
-      double ringProgress;
-      if (isActive) {
-        ringProgress = (progress + i * 0.33) % 1.0;
-      } else {
-        ringProgress = i / 3.0;
-      }
-
-      final radius = maxRadius * (0.3 + ringProgress * 0.7);
-      final alpha = isActive
-          ? (1.0 - ringProgress) * 0.25
-          : 0.06;
+    // Background rings (always visible)
+    for (var i = 1; i <= 4; i++) {
+      final ringProgress = i / 4.0;
+      final radius = maxRadius * ringProgress;
       final paint = Paint()
-        ..color = color.withValues(alpha: alpha)
+        ..color = color.withValues(alpha: isActive ? 0.08 : 0.05)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = isActive ? 2.0 * (1.0 - ringProgress) + 0.5 : 1.0;
+        ..strokeWidth = 1.0;
       canvas.drawCircle(center, radius, paint);
     }
 
     if (isActive) {
+      // Animated expanding rings
+      for (var i = 0; i < 3; i++) {
+        final ringProgress = (progress + i * 0.33) % 1.0;
+        final radius = maxRadius * (0.2 + ringProgress * 0.8);
+        final alpha = (1.0 - ringProgress) * 0.3;
+        final strokeWidth = 2.5 * (1.0 - ringProgress) + 0.5;
+        final paint = Paint()
+          ..color = color.withValues(alpha: alpha)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth;
+        canvas.drawCircle(center, radius, paint);
+      }
+
+      // Sweep line
+      canvas.save();
+      canvas.translate(center.dx, center.dy);
+      canvas.rotate(progress * 2 * 3.14159);
+      final sweepPaint = Paint()
+        ..shader = SweepGradient(
+          startAngle: 0,
+          endAngle: 1.0,
+          colors: [
+            color.withValues(alpha: 0.0),
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0.0),
+          ],
+          stops: const [0.0, 0.15, 0.3],
+        ).createShader(Rect.fromCircle(center: Offset.zero, radius: maxRadius));
+      canvas.drawCircle(Offset.zero, maxRadius * 0.9, sweepPaint);
+      canvas.restore();
+
+      // Center glow
       final glowPaint = Paint()
-        ..color = color.withValues(alpha: 0.08 + progress * 0.04)
-        ..style = PaintingStyle.fill;
-      canvas.drawCircle(center, maxRadius * 0.35, glowPaint);
+        ..shader = RadialGradient(
+          colors: [
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0.0),
+          ],
+        ).createShader(Rect.fromCircle(center: center, radius: maxRadius * 0.4));
+      canvas.drawCircle(center, maxRadius * 0.4, glowPaint);
     }
   }
 

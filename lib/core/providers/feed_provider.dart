@@ -1,8 +1,6 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../api/api_client.dart';
-import '../api/api_endpoints.dart';
 import '../models/post.dart';
+import '../../data/mock_service.dart';
 
 class FeedState {
   final List<Post> posts;
@@ -10,7 +8,7 @@ class FeedState {
   final bool isLoadingMore;
   final bool hasMore;
   final String? error;
-  final String? nextCursor;
+  final int _page;
 
   const FeedState({
     this.posts = const [],
@@ -18,8 +16,10 @@ class FeedState {
     this.isLoadingMore = false,
     this.hasMore = true,
     this.error,
-    this.nextCursor,
-  });
+    int page = 0,
+  }) : _page = page;
+
+  int get page => _page;
 
   FeedState copyWith({
     List<Post>? posts,
@@ -27,7 +27,7 @@ class FeedState {
     bool? isLoadingMore,
     bool? hasMore,
     String? error,
-    String? nextCursor,
+    int? page,
   }) {
     return FeedState(
       posts: posts ?? this.posts,
@@ -35,15 +35,13 @@ class FeedState {
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMore: hasMore ?? this.hasMore,
       error: error,
-      nextCursor: nextCursor,
+      page: page ?? _page,
     );
   }
 }
 
 class FeedNotifier extends StateNotifier<FeedState> {
-  final ApiClient _apiClient;
-
-  FeedNotifier(this._apiClient) : super(const FeedState()) {
+  FeedNotifier() : super(const FeedState()) {
     loadFeed();
   }
 
@@ -51,56 +49,34 @@ class FeedNotifier extends StateNotifier<FeedState> {
     if (state.isLoading) return;
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final response = await _apiClient.get(ApiEndpoints.feed);
-      final data = response.data as Map<String, dynamic>;
-      final posts = (data['data'] as List)
-          .map((e) => Post.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final posts = await MockService.instance.getFeed();
       state = FeedState(
         posts: posts,
         isLoading: false,
-        hasMore: data['has_more'] as bool? ?? false,
-        nextCursor: data['next_cursor']?.toString(),
+        hasMore: posts.length >= 10,
+        page: 1,
       );
-    } on DioException catch (e) {
-      // Fall back to demo data on network error
+    } catch (e) {
       state = FeedState(
         posts: Post.demoPosts,
         isLoading: false,
-        error: apiErrorMessage(e),
-        hasMore: false,
-      );
-    } catch (_) {
-      state = FeedState(
-        posts: Post.demoPosts,
-        isLoading: false,
+        error: e.toString(),
         hasMore: false,
       );
     }
   }
 
   Future<void> loadMore() async {
-    if (state.isLoadingMore || !state.hasMore || state.nextCursor == null) {
-      return;
-    }
+    if (state.isLoadingMore || !state.hasMore) return;
     state = state.copyWith(isLoadingMore: true);
     try {
-      final response = await _apiClient.get(
-        ApiEndpoints.feed,
-        queryParameters: {'cursor': state.nextCursor},
-      );
-      final data = response.data as Map<String, dynamic>;
-      final newPosts = (data['data'] as List)
-          .map((e) => Post.fromJson(e as Map<String, dynamic>))
-          .toList();
+      final newPosts = await MockService.instance.getFeed(page: state.page);
       state = state.copyWith(
         posts: [...state.posts, ...newPosts],
         isLoadingMore: false,
-        hasMore: data['has_more'] as bool? ?? false,
-        nextCursor: data['next_cursor']?.toString(),
+        hasMore: newPosts.length >= 10,
+        page: state.page + 1,
       );
-    } on DioException catch (_) {
-      state = state.copyWith(isLoadingMore: false);
     } catch (_) {
       state = state.copyWith(isLoadingMore: false);
     }
@@ -118,32 +94,7 @@ class FeedNotifier extends StateNotifier<FeedState> {
       );
     }).toList();
     state = state.copyWith(posts: posts);
-
-    final post = state.posts.firstWhere((p) => p.id == postId,
-        orElse: () => state.posts.first);
-    if (post.isLiked) {
-      _apiClient.delete(ApiEndpoints.unlikePost(postId)).catchError((_) {
-        _revertLike(postId);
-        return Response(requestOptions: RequestOptions());
-      });
-    } else {
-      _apiClient.post(ApiEndpoints.likePost(postId)).catchError((_) {
-        _revertLike(postId);
-        return Response(requestOptions: RequestOptions());
-      });
-    }
-  }
-
-  void _revertLike(String postId) {
-    final posts = state.posts.map((p) {
-      if (p.id != postId) return p;
-      final newLiked = !p.isLiked;
-      return p.copyWith(
-        isLiked: newLiked,
-        likesCount: newLiked ? p.likesCount + 1 : p.likesCount - 1,
-      );
-    }).toList();
-    state = state.copyWith(posts: posts);
+    MockService.instance.toggleLike(postId);
   }
 
   void toggleSave(String postId) {
@@ -152,6 +103,7 @@ class FeedNotifier extends StateNotifier<FeedState> {
       return p.copyWith(isSaved: !p.isSaved);
     }).toList();
     state = state.copyWith(posts: posts);
+    MockService.instance.toggleSave(postId);
   }
 
   void removePost(String postId) {
@@ -162,6 +114,5 @@ class FeedNotifier extends StateNotifier<FeedState> {
 }
 
 final feedProvider = StateNotifierProvider<FeedNotifier, FeedState>((ref) {
-  final apiClient = ref.watch(apiClientProvider);
-  return FeedNotifier(apiClient);
+  return FeedNotifier();
 });
